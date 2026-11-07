@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>澄海渡假村 · SQL 查詢練習</title>
+<meta name="description" content="渡假村訂房與設施管理資料庫：ERD、欄位說明、樣本資料，以及可在瀏覽器直接修改並執行的 SQL 查詢。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5efe3; --surface:#fffdf8; --surface-2:#f9f4ea; --ink:#1b2a2c; --muted:#5f6c6a; --line:#e3d8c4;
+  --sea:#0d6b67; --sea-soft:#d8ece8; --coral:#c9562c; --coral-soft:#f8e2d6; --sun:#b98a1d; --good:#2c7a4b; --good-soft:#dcefe2; --bad:#b3372b; --bad-soft:#f7dcd8;
+  --code-bg:#14272a; --code-ink:#e6efe9; --code-kw:#7fd1c4; --code-str:#f2b880; --code-num:#e8a3c9; --code-fn:#a9c7ff; --code-cm:#7a8f8c;
+  --shadow:0 1px 2px rgba(27,42,44,.06),0 8px 24px rgba(27,42,44,.06);
+  --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,"Noto Sans TC",monospace;
+  --sans:"Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --serif:"Noto Serif TC","Songti TC",serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0e1819; --surface:#152224; --surface-2:#1a2a2c; --ink:#e7eeea; --muted:#9aaba8; --line:#28393b;
+  --sea:#5cc0b4; --sea-soft:#173a38; --coral:#f08a5d; --coral-soft:#3b2419; --sun:#e0b54a; --good:#6fcf97; --good-soft:#163323; --bad:#ff8a7a; --bad-soft:#3a1c18;
+  --code-bg:#0a1415; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--sea)}
+h1,h2,h3{font-family:var(--serif);line-height:1.3;margin:0}
+code,kbd{font-family:var(--mono);font-size:.88em}
+p code,li code,td code{background:var(--surface-2);border:1px solid var(--line);padding:0 .35em;border-radius:5px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+@media (max-width:600px){.wrap{padding:0 16px}}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:20px;height:56px}
+.brand{font-family:var(--serif);font-weight:900;font-size:18px;text-decoration:none;color:var(--ink);white-space:nowrap}
+.brand span{color:var(--sea)}
+.nav nav{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex:1}
+.nav nav a{color:var(--muted);text-decoration:none;font-size:14px;padding:6px 10px;border-radius:8px;white-space:nowrap}
+.nav nav a:hover{background:var(--surface-2);color:var(--ink)}
+.status{font-size:12px;display:flex;align-items:center;gap:6px;color:var(--muted);white-space:nowrap}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--sun);display:inline-block}
+.status.ok i{background:var(--good)} .status.err i{background:var(--bad)}
+@media (max-width:720px){.brand{display:none}.status b{display:none}}
+
+/* hero */
+.hero{position:relative;overflow:hidden;padding:64px 0 56px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--sea-soft),transparent 85%)}
+.hero .eyebrow{font-size:13px;letter-spacing:.18em;color:var(--sea);font-weight:700}
+.hero h1{font-size:clamp(34px,6vw,60px);font-weight:900;margin:10px 0 12px}
+.hero p.lead{font-size:18px;color:var(--muted);max-width:640px;margin:0}
+.stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.stats div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 16px;box-shadow:var(--shadow)}
+.stats b{font-family:var(--serif);font-size:24px;color:var(--sea);margin-right:6px}
+.stats span{font-size:14px;color:var(--muted)}
+.waves{position:absolute;right:-40px;bottom:-10px;width:520px;max-width:70%;opacity:.5;pointer-events:none}
+.waves path{fill:none;stroke:var(--sea);stroke-width:2}
+
+/* sections */
+section.sec{padding:64px 0;border-bottom:1px solid var(--line)}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+.sec-num{font-family:var(--serif);font-weight:900;font-size:15px;color:var(--coral);border:1.5px solid var(--coral);border-radius:999px;width:32px;height:32px;display:grid;place-items:center;flex:none;transform:translateY(-3px)}
+.sec-head h2{font-size:clamp(26px,3.6vw,34px)}
+.sec-sub{color:var(--muted);margin:0 0 32px;max-width:760px}
+h3.sub{font-size:20px;margin:40px 0 14px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.who{padding:18px 18px 14px}
+.who .role{font-weight:700;font-size:17px;display:flex;align-items:center;gap:8px}
+.who .role em{font-style:normal;font-size:20px}
+.who ul{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:14.5px}
+.story{padding:22px 24px;font-size:16.5px}
+.story p{margin:0 0 10px}.story p:last-child{margin:0}
+.pain{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.pain a{display:flex;gap:12px;text-decoration:none;color:var(--ink);padding:14px 16px;align-items:flex-start}
+.pain a:hover{border-color:var(--sea)}
+.pain .tag{flex:none;font:600 12px var(--mono);color:var(--sea);background:var(--sea-soft);border-radius:6px;padding:2px 7px;margin-top:3px}
+.pain .q{font-weight:500}
+.pain .d{font-size:14px;color:var(--muted)}
+.rules{counter-reset:r;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;padding:0;margin:0;list-style:none}
+.rules li{counter-increment:r;padding:14px 16px 14px 52px;position:relative;font-size:15px}
+.rules li::before{content:counter(r);position:absolute;left:16px;top:14px;width:24px;height:24px;border-radius:50%;background:var(--coral-soft);color:var(--coral);font:700 13px/24px var(--sans);text-align:center}
+.rules b{display:block;margin-bottom:2px}
+.rules span{color:var(--muted)}
+
+/* ERD */
+.erd-wrap{padding:16px;overflow-x:auto}
+.erd{width:100%;min-width:760px;height:auto;display:block}
+.erd-box{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.erd-head{fill:var(--sea)}
+.erd-title{fill:#fff;font:700 15px var(--mono)}
+.erd-zh{font:500 13px var(--sans);fill:#fff;opacity:.85}
+.erd-col{fill:var(--ink);font:13px var(--mono)} .erd-col.is-pk{font-weight:600;text-decoration:underline}
+.erd-type{fill:var(--muted);font:11px var(--mono)}
+.erd-key{font:700 10px var(--mono)} .erd-key-pk{fill:var(--sun)} .erd-key-fk{fill:var(--coral)} .erd-key-uq{fill:var(--muted)}
+.erd-sep{stroke:var(--line)}
+.erd-link{fill:none;stroke:var(--muted);stroke-width:1.6}
+.erd-mk{fill:none;stroke:var(--muted);stroke-width:1.6}
+.erd-table{transition:opacity .2s}
+.erd.focus .erd-table:not(.on){opacity:.28}
+.erd.focus .erd-link:not(.on){opacity:.15}
+.erd .erd-table.on .erd-box{stroke:var(--sea);stroke-width:2.5}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13.5px;color:var(--muted);padding:4px 4px 0}
+.legend b{font-family:var(--mono);font-size:12px}
+.legend .pk{color:var(--sun)} .legend .fk{color:var(--coral)}
+.rels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px;margin-top:14px;font-size:14.5px}
+.rels div{padding:10px 14px;border:1px dashed var(--line);border-radius:10px}
+.rels code{background:none;border:0;padding:0;color:var(--sea)}
+
+/* tabs & data tables */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tab{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 14px;font:500 14px var(--sans);cursor:pointer}
+.tab small{font-family:var(--mono);color:var(--muted);margin-left:6px}
+.tab[aria-selected="true"]{background:var(--sea);border-color:var(--sea);color:#fff}
+.tab[aria-selected="true"] small{color:#fff;opacity:.8}
+.tpanel{padding:20px}
+.tpanel .tdesc{margin:0 0 14px;color:var(--muted)}
+.tpanel h4{margin:22px 0 8px;font-size:15px}
+.dual{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:22px}
+@media (max-width:900px){.dual{grid-template-columns:minmax(0,1fr)}}
+.tbl-scroll{overflow:auto;border:1px solid var(--line);border-radius:10px;max-height:440px;background:var(--surface)}
+table.t{border-collapse:collapse;width:100%;font-size:13.5px}
+table.t th,table.t td{padding:7px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+table.t th{position:sticky;top:0;background:var(--surface-2);font:600 12.5px var(--mono);color:var(--muted);z-index:1}
+table.t td.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+table.t tr:last-child td{border-bottom:0}
+table.t .null{color:var(--muted);font:italic 12px var(--mono);opacity:.75}
+table.t tr.extra td{background:var(--bad-soft)}
+table.t tr.extra td:first-child{box-shadow:inset 3px 0 var(--bad)}
+.dict td:first-child{font-family:var(--mono);font-weight:600}
+.dict td:nth-child(2){font-family:var(--mono);font-size:12px;color:var(--muted)}
+.dict td:last-child{white-space:normal}
+.k{font:700 10.5px var(--mono);padding:1px 5px;border-radius:4px;margin-left:6px;vertical-align:1px}
+.k.PK{background:color-mix(in srgb,var(--sun) 20%,transparent);color:var(--sun)}
+.k.FK{background:var(--coral-soft);color:var(--coral)}
+.k.UQ{background:var(--surface-2);color:var(--muted)}
+details.ddl{margin-top:18px}
+details.ddl summary{cursor:pointer;color:var(--sea);font-weight:500}
+
+/* code */
+pre.code,.editor pre,.editor textarea{font:13.5px/1.65 var(--mono);tab-size:2}
+pre.code{margin:10px 0 0;background:var(--code-bg);color:var(--code-ink);padding:16px 18px;border-radius:12px;overflow:auto;max-height:420px}
+.tk-kw{color:var(--code-kw);font-weight:600}.tk-str{color:var(--code-str)}.tk-num{color:var(--code-num)}.tk-fn{color:var(--code-fn)}.tk-cm{color:var(--code-cm);font-style:italic}
+.editor{position:relative;background:var(--code-bg);border-radius:12px;overflow:hidden;border:1px solid transparent}
+.editor:focus-within{border-color:var(--sea);box-shadow:0 0 0 3px color-mix(in srgb,var(--sea) 25%,transparent)}
+.editor pre,.editor textarea{margin:0;padding:16px 18px;white-space:pre;overflow:auto;border:0;width:100%;letter-spacing:0;word-spacing:0}
+.editor pre{position:absolute;inset:0;color:var(--code-ink);pointer-events:none;overflow:hidden}
+.editor textarea{position:relative;display:block;resize:none;background:transparent;color:transparent;caret-color:#fff;outline:none;min-height:120px;overflow-y:hidden}
+.editor textarea::selection{background:rgba(127,209,196,.3);color:transparent}
+
+/* query workspace */
+.ws{display:grid;grid-template-columns:280px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:960px){.ws{grid-template-columns:minmax(0,1fr)}}
+.qlist{display:flex;flex-direction:column;gap:6px;position:sticky;top:76px}
+@media (max-width:960px){.qlist{position:static;flex-direction:row;overflow-x:auto;padding-bottom:6px}}
+.qbtn{appearance:none;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;cursor:pointer;color:var(--ink);font:inherit;display:flex;gap:10px}
+@media (max-width:960px){.qbtn{min-width:210px}}
+.qbtn .no{font:700 13px var(--mono);color:var(--muted);flex:none;width:22px}
+.qbtn .tt{font-size:14.5px;font-weight:500;line-height:1.45}
+.qbtn .tp{display:block;font:11.5px var(--mono);color:var(--muted);margin-top:2px}
+.qbtn[aria-current="true"]{border-color:var(--sea);background:var(--sea-soft)}
+.qbtn[aria-current="true"] .no{color:var(--sea)}
+.qmain{padding:22px}
+.qtop{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px}
+.pill{font-size:12px;padding:2px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+.pill.role{background:var(--coral-soft);border-color:transparent;color:var(--coral);font-weight:500}
+.qmain h3{font-size:22px;margin:4px 0 6px}
+.qmain .qq{margin:0 0 14px;font-size:16px}
+.uses{font-size:13px;color:var(--muted);margin:10px 0 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.uses code{background:var(--sea-soft);border:0;color:var(--sea);padding:1px 7px;border-radius:6px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 0}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:8px 14px;font:500 14px var(--sans);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--sea)}
+.btn.primary{background:var(--sea);border-color:var(--sea);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.hint{font-size:12.5px;color:var(--muted)}
+.tip{margin-top:14px;font-size:14.5px;background:var(--surface-2);border-left:3px solid var(--sun);padding:10px 14px;border-radius:0 10px 10px 0}
+.tip b{color:var(--sun)}
+details.ex{margin-top:12px;font-size:14.5px}
+details.ex summary{cursor:pointer;color:var(--sea);font-weight:500}
+details.ex p{margin:8px 0 0;color:var(--ink)}
+.results{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:20px}
+@media (max-width:1100px){.results{grid-template-columns:minmax(0,1fr)}}
+.rhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.rhead h4{margin:0;font-size:15px}
+.meta{font-size:12.5px;color:var(--muted)}
+.badge{font-size:12.5px;font-weight:600;padding:2px 10px;border-radius:999px}
+.badge.ok{background:var(--good-soft);color:var(--good)} .badge.diff{background:var(--coral-soft);color:var(--coral)} .badge.err{background:var(--bad-soft);color:var(--bad)}
+.empty{border:1.5px dashed var(--line);border-radius:10px;padding:28px 16px;text-align:center;color:var(--muted);font-size:14px}
+.errbox{border:1px solid var(--bad);background:var(--bad-soft);color:var(--bad);border-radius:10px;padding:12px 14px;font:13.5px/1.6 var(--mono);white-space:pre-wrap}
+.errbox b{font-family:var(--sans)}
+.okbox{border:1px solid var(--good);background:var(--good-soft);color:var(--good);border-radius:10px;padding:12px 14px;font-size:14px}
+.multi{font-size:12.5px;color:var(--muted);margin:10px 0 4px;font-family:var(--mono)}
+
+/* compare */
+.cmp{padding:22px;margin-bottom:22px}
+.cmp-head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline}
+.cmp-head h3{font-size:21px}
+.cmp-head .no{font:700 14px var(--mono);color:var(--coral)}
+.cmp .qq{margin:6px 0 16px;color:var(--muted)}
+.cmp .qq b{color:var(--ink);font-weight:500}
+.variants{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.var{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--surface-2);min-width:0;display:flex;flex-direction:column;gap:10px}
+.var-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.var-top b{font-size:14.5px}
+.vtag{font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px}
+.vtag.bad{background:var(--bad-soft);color:var(--bad)} .vtag.good{background:var(--good-soft);color:var(--good)}
+.var .editor textarea,.var .editor pre{font-size:12.5px;padding:12px 14px}
+.var .editor textarea{min-height:80px}
+.var .tbl-scroll{max-height:320px}
+.var .note{font-size:13px;color:var(--muted)}
+.var .note .lost{color:var(--bad);font-weight:600}
+.why{margin-top:16px;padding:16px 18px;border-radius:12px;background:var(--sea-soft);font-size:15px}
+.why h4{margin:0 0 6px;font-size:15px;color:var(--sea)}
+.why p{margin:0 0 6px}.why p:last-child{margin:0}
+
+footer{padding:40px 0 60px;color:var(--muted);font-size:14px}
+footer p{margin:4px 0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top">澄海<span>渡假村</span></a>
+    <nav aria-label="章節">
+      <a href="#case">1 案例背景</a><a href="#design">2 資料庫設計</a><a href="#query">3 查詢操作</a><a href="#compare">4 結果比較</a>
+    </nav>
+    <div class="status" id="status" role="status"><i></i><b>SQLite</b><span>載入中…</span></div>
+  </div>
+</header>
+
+<div class="hero" id="top">
+  <svg class="waves" viewBox="0 0 520 160" aria-hidden="true">
+    <path d="M0 40 Q 32 20 65 40 T 130 40 T 195 40 T 260 40 T 325 40 T 390 40 T 455 40 T 520 40"/>
+    <path d="M0 80 Q 32 60 65 80 T 130 80 T 195 80 T 260 80 T 325 80 T 390 80 T 455 80 T 520 80" opacity=".6"/>
+    <path d="M0 120 Q 32 100 65 120 T 130 120 T 195 120 T 260 120 T 325 120 T 390 120 T 455 120 T 520 120" opacity=".3"/>
+  </svg>
+  <div class="wrap">
+    <div class="eyebrow">DATABASE · SQL QUERY PRACTICE</div>
+    <h1>澄海渡假村<br>訂房與設施資料庫</h1>
+    <p class="lead">一間虛構的海濱渡假村，用關聯式資料庫管理客房、訂單與設施預約。所有 SQL 都在你的瀏覽器裡以 SQLite 執行，可以直接修改、執行、看結果或錯誤訊息。</p>
+    <div class="stats" id="stats"></div>
+  </div>
+</div>
+
+<main>
+<!-- 1 -->
+<section class="sec" id="case">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">1</span><h2>案例背景</h2></div>
+    <p class="sec-sub">這個資料庫給誰用？要解決什麼問題？</p>
+
+    <div class="card story">
+      <p>澄海渡假村位於恆春半島海邊（虛構），共有 <b>12 間客房</b>，分成標準雙人房、豪華海景房、家庭四人房與私人泳池別墅四種房型，另外提供 SPA、浮潛、立槳、海灘燒烤與親子課程等設施。</p>
+      <p>過去訂房靠紙本登記加上 Excel，常出包：<b>同一間房在聖誕節被重複賣出</b>、<b>取消的訂單被算進營收</b>、經理不知道哪間房一直空著、行銷也說不出誰是高消費旅客。因此改用關聯式資料庫，把「旅客、客房、訂單、設施」拆成彼此關聯的資料表，讓每個部門都能用 SQL 找到答案。</p>
+    </div>
+
+    <h3 class="sub">使用者</h3>
+    <div class="grid-4">
+      <div class="card who"><div class="role"><em>🛎️</em>櫃檯人員</div><ul><li>查某段日期還有哪些空房</li><li>依旅客需求找房（海景、人數）</li></ul></div>
+      <div class="card who"><div class="role"><em>📊</em>營運經理</div><ul><li>各房型營收與住房晚數</li><li>找出閒置、乏人問津的房間</li><li>設施熱門排行</li></ul></div>
+      <div class="card who"><div class="role"><em>🧾</em>財務</div><ul><li>每筆訂單的房費結算</li><li>排除取消單、找出高額訂單</li></ul></div>
+      <div class="card who"><div class="role"><em>💌</em>行銷</div><ul><li>各會員等級的貢獻</li><li>設施消費大戶，安排回饋</li></ul></div>
+    </div>
+
+    <h3 class="sub">要解決的問題 → 對應查詢</h3>
+    <div class="pain" id="painList"></div>
+
+    <h3 class="sub">設計時的商業規則</h3>
+    <ol class="rules">
+      <li class="card"><b>房型資訊只存一次</b><span>名稱、人數、定價放在 <code>room_type</code>，每間 <code>room</code> 只記 <code>type_id</code>，調價只要改一列（正規化，避免重複與不一致）。</span></li>
+      <li class="card"><b>訂單保存「成交價」</b><span><code>booking.price_per_night</code> 是訂房當下的價格，與定價 <code>base_price</code> 分開；有 VIP 折扣、聖誕加價，日後調價也不影響舊訂單。</span></li>
+      <li class="card"><b>取消不刪除</b><span>取消的訂單改 <code>status = '已取消'</code> 保留紀錄，所以統計營收、查空房時都要記得排除。</span></li>
+      <li class="card"><b>住宿區間是 [入住, 退房)</b><span>退房日當天可以讓下一位旅客入住，兩筆訂單「重疊」的判斷要用 &lt; 與 &gt;。</span></li>
+      <li class="card"><b>設施使用掛在訂單下</b><span><code>facility_order</code> 參照 <code>booking</code> 而非 <code>guest</code>，才知道是哪一次住宿的消費，也能跟房費一起結帳。</span></li>
+      <li class="card"><b>NULL 代表非會員</b><span><code>guest.member_level</code> 允許 NULL；查詢時要用 <code>IS NULL</code> 或 <code>COALESCE</code> 處理。</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="sec" id="design">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">2</span><h2>資料庫設計</h2></div>
+    <p class="sec-sub">6 張資料表、5 個一對多關聯。點選下方資料表可在 ERD 中標示它與相鄰的表。</p>
+
+    <div class="card erd-wrap">
+      <!--__ERD__-->
+      <div class="legend">
+        <span><b class="pk">PK</b> 主鍵（底線）</span><span><b class="fk">FK</b> 外來鍵</span><span><b>UQ</b> 唯一值</span>
+        <span>線條：三叉端 = 多（N），雙橫線端 = 一（1）</span>
+      </div>
+    </div>
+    <div class="rels" id="rels"></div>
+
+    <h3 class="sub">欄位說明與樣本資料</h3>
+    <div class="tabs" role="tablist" id="ttabs"></div>
+    <div class="card tpanel" id="tpanel"></div>
+
+    <details class="ddl"><summary>顯示完整的 CREATE TABLE 與 INSERT 指令</summary><pre class="code" id="ddl"></pre></details>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="sec" id="query">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">3</span><h2>查詢操作</h2></div>
+    <p class="sec-sub">選一個問題，閱讀 SQL 與預期結果，然後自由修改、按「執行」看實際結果或錯誤訊息。每次執行都會從原始樣本資料重建資料庫，就算下了 <code>DELETE</code> 或 <code>UPDATE</code> 也不會弄壞其他題目。</p>
+    <div class="ws">
+      <div class="qlist" id="qlist" role="list"></div>
+      <div class="card qmain" id="qmain">
+        <div class="qtop"><span class="pill role" id="qWho"></span><span class="pill" id="qTopic"></span></div>
+        <h3 id="qTitle"></h3>
+        <p class="qq" id="qQuestion"></p>
+        <div class="editor" id="qEditor"></div>
+        <div class="toolbar">
+          <button class="btn primary" id="qRun" disabled>▶ 執行</button>
+          <button class="btn" id="qReset">↺ 還原原範例</button>
+          <span class="hint"><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd> 執行</span>
+        </div>
+        <p class="uses" id="qUses"></p>
+        <div class="tip" id="qTry"></div>
+        <details class="ex"><summary>這段 SQL 在做什麼？</summary><p id="qExplain"></p></details>
+        <div class="results">
+          <div><div class="rhead"><h4>預期結果</h4><span class="meta" id="qExpMeta"></span></div><div id="qExpected"></div></div>
+          <div><div class="rhead"><h4>實際結果</h4><span id="qBadge"></span></div><div id="qActual"><div class="empty">尚未執行。修改上方 SQL 後按「▶ 執行」。</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="sec" id="compare">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">4</span><h2>結果比較</h2></div>
+    <p class="sec-sub">同一個問題，只改一小段 SQL，結果就可能差很多。每個版本都可以直接修改並重新執行；<span style="background:var(--bad-soft);padding:0 4px;border-radius:4px">紅底</span>的列代表「正確版本裡沒有的列」。</p>
+    <div id="cmpList"></div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>資料為虛構，僅供課程練習。查詢引擎：<a href="https://github.com/sql-js/sql.js">sql.js</a>（SQLite 編譯為 WebAssembly，MIT 授權），全部在瀏覽器端執行，不需伺服器。</p>
+    <p id="author">製作：（請在 index.html 搜尋「製作：」填上姓名與學號）</p>
+  </div>
+</footer>
+
+<script src="lib/sql-wasm.js"></script>
+<script>
+const DATA = /*__DATA__*/null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const TABLE_NAMES = DATA.tables.map(t => t.name);
+
+/* ---------- SQL 語法上色 ---------- */
+const KW = new Set('SELECT FROM WHERE AND OR NOT IN IS NULL AS JOIN LEFT RIGHT INNER OUTER FULL CROSS ON GROUP BY ORDER HAVING LIMIT OFFSET DISTINCT CASE WHEN THEN ELSE END ASC DESC EXISTS BETWEEN LIKE UNION ALL INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE PRIMARY KEY REFERENCES CHECK DEFAULT UNIQUE INTEGER TEXT REAL OVER PARTITION WITH PRAGMA DROP ALTER ADD VIEW INDEX'.split(' '));
+const FN = new Set('COUNT SUM AVG MIN MAX COALESCE IFNULL JULIANDAY DATE STRFTIME CAST ROUND RANK ROW_NUMBER DENSE_RANK LENGTH UPPER LOWER SUBSTR NULLIF'.split(' '));
+function highlight(sql){
+  return sql.replace(/(--[^\n]*)|('(?:[^']|'')*'?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)|([^\-'A-Za-z0-9_]+|-)/g,(m,cm,str,num,word,other)=>{
+    if(cm) return `<span class="tk-cm">${esc(cm)}</span>`;
+    if(str) return `<span class="tk-str">${esc(str)}</span>`;
+    if(num) return `<span class="tk-num">${num}</span>`;
+    if(word){const u=word.toUpperCase(); if(KW.has(u)) return `<span class="tk-kw">${word}</span>`; if(FN.has(u)) return `<span class="tk-fn">${word}</span>`; return esc(word);}
+    return esc(other);
+  });
+}
+
+/* ---------- 編輯器 ---------- */
+function makeEditor(host, initial, onRun){
+  host.innerHTML = '<pre aria-hidden="true"><code></code></pre><textarea spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="SQL 編輯器"></textarea>';
+  const ta = host.querySelector('textarea'), code = host.querySelector('code'), pre = host.querySelector('pre');
+  const paint = () => { code.innerHTML = highlight(ta.value) + '\n'; ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+  ta.addEventListener('input', paint);
+  ta.addEventListener('scroll', () => { pre.scrollLeft = ta.scrollLeft; });
+  ta.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); onRun(); }
+    else if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); document.execCommand('insertText', false, '  '); }
+  });
+  const api = { get value(){ return ta.value; }, set value(v){ ta.value = v; paint(); pre.scrollLeft = 0; ta.scrollLeft = 0; } };
+  api.value = initial;
+  new ResizeObserver(paint).observe(host);
+  return api;
+}
+
+/* ---------- 結果表 ---------- */
+function renderTable(cols, rows, extraKeys){
+  if (!cols.length) return '<div class="empty">查詢成功，但沒有回傳任何欄位。</div>';
+  if (!rows.length) return `<div class="tbl-scroll"><table class="t"><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead></table></div><div class="empty" style="margin-top:8px">0 列：沒有符合條件的資料。</div>`;
+  const body = rows.map(r => {
+    const cls = extraKeys && extraKeys.has(JSON.stringify(r)) ? ' class="extra"' : '';
+    return `<tr${cls}>` + r.map(v => v === null ? '<td><span class="null">NULL</span></td>' : typeof v === 'number' ? `<td class="n">${Number.isInteger(v) ? v : +v.toFixed(4)}</td>` : `<td>${esc(v)}</td>`).join('') + '</tr>';
+  }).join('');
+  return `<div class="tbl-scroll"><table class="t"><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+/* ---------- SQLite ---------- */
+let SQL = null;
+function runSQL(sql){
+  const db = new SQL.Database();
+  db.exec(DATA.seed);
+  const t0 = performance.now();
+  try {
+    const sets = db.exec(sql);
+    return { sets, ms: performance.now() - t0, modified: db.getRowsModified() };
+  } catch (e) { return { error: e.message }; }
+  finally { db.close(); }
+}
+function translateError(msg){
+  const tips = [
+    [/no such table: (\S+)/, m => `找不到資料表 ${m[1]}，請確認表名拼字（可用的表：${TABLE_NAMES.join('、')}）。`],
+    [/no such column: (\S+)/, m => `找不到欄位 ${m[1]}，請確認欄位名稱，或是否忘了 JOIN 那張表／別名寫錯。`],
+    [/misuse of aggregate/, () => '聚合函數（SUM、COUNT…）不能出現在 WHERE，分組後的條件請改用 HAVING。'],
+    [/ambiguous column name: (\S+)/, m => `欄位 ${m[1]} 同時存在於多張表，請加上表名或別名，例如 b.${m[1]}。`],
+    [/syntax error/, () => '語法錯誤：檢查附近是否少了逗號、括號、引號，或關鍵字拼錯。'],
+    [/incomplete input/, () => 'SQL 不完整：可能少了右括號或結尾的引號。'],
+    [/FOREIGN KEY constraint failed/, () => '違反外來鍵：參照的資料不存在（例如不存在的 guest_id）。'],
+    [/UNIQUE constraint failed|PRIMARY KEY/, () => '違反唯一／主鍵限制：這個值已經存在。'],
+    [/CHECK constraint failed/, () => '違反 CHECK 限制：值不符合欄位規則（例如退房日早於入住日）。'],
+    [/NOT NULL constraint failed/, () => '這個欄位不可為 NULL。'],
+  ];
+  for (const [re, f] of tips) { const m = msg.match(re); if (m) return f(m); }
+  return '';
+}
+function renderRun(res, extraKeys){
+  if (res.error) {
+    const zh = translateError(res.error);
+    return `<div class="errbox"><b>錯誤：</b>${esc(res.error)}${zh ? `\n<b>可能原因：</b>${esc(zh)}` : ''}</div>`;
+  }
+  if (!res.sets.length) return `<div class="okbox">執行成功，沒有回傳結果集${res.modified ? `（影響 ${res.modified} 列）` : ''}。下次執行會重建資料庫。</div>`;
+  if (res.sets.length === 1) return renderTable(res.sets[0].columns, res.sets[0].values, extraKeys);
+  return res.sets.map((s, i) => `<div class="multi">結果集 ${i + 1} / ${res.sets.length}</div>` + renderTable(s.columns, s.values)).join('');
+}
+const lastSet = res => res.sets && res.sets.length ? res.sets[res.sets.length - 1] : null;
+const tablesUsed = sql => TABLE_NAMES.filter(t => new RegExp(`\\b${t}\\b`, 'i').test(sql.replace(/'(?:[^']|'')*'/g, '')));
+
+/* ---------- 1 案例背景 ---------- */
+$('#stats').innerHTML = [
+  [DATA.tables.length, '張資料表'], [DATA.totalRows, '筆樣本資料'], [DATA.queries.length, '個查詢'], [DATA.compares.length, '組結果比較'],
+].map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('');
+$('#painList').innerHTML = DATA.queries.map((q, i) =>
+  `<a class="card" href="#query" data-q="${i}"><span class="tag">Q${i + 1}</span><span><span class="q">${esc(q.title)}</span><br><span class="d">${esc(q.who)}：${esc(q.question)}</span></span></a>`).join('');
+document.querySelectorAll('#painList a').forEach(a => a.addEventListener('click', () => selectQuery(+a.dataset.q)));
+
+/* ---------- 2 資料庫設計 ---------- */
+$('#rels').innerHTML = DATA.relations.map(([ct, cc, pt, pc, l]) =>
+  `<div><code>${pt}.${pc}</code> 1 ── N <code>${ct}.${cc}</code><br><span class="hint">${esc(l)}</span></div>`).join('');
+const erd = document.querySelector('svg.erd');
+function focusERD(names){
+  if (!names || !names.length) { erd.classList.remove('focus'); erd.querySelectorAll('.on').forEach(e => e.classList.remove('on')); return; }
+  erd.classList.add('focus');
+  erd.querySelectorAll('.erd-table').forEach(g => g.classList.toggle('on', names.includes(g.dataset.table)));
+  erd.querySelectorAll('.erd-link').forEach(l => l.classList.toggle('on', names.includes(l.dataset.from) && names.includes(l.dataset.to)));
+}
+function showTable(i){
+  const t = DATA.tables[i];
+  document.querySelectorAll('#ttabs .tab').forEach((b, j) => b.setAttribute('aria-selected', i === j));
+  const neighbors = [t.name, ...DATA.relations.filter(r => r[0] === t.name || r[2] === t.name).flatMap(r => [r[0], r[2]])];
+  focusERD([...new Set(neighbors)]);
+  $('#tpanel').innerHTML = `
+    <p class="tdesc"><b style="color:var(--ink);font-family:var(--mono)">${t.name}</b>（${esc(t.zh)}）— ${esc(t.desc)}</p>
+    <div class="dual">
+      <div><h4 style="margin-top:0">欄位說明</h4><div class="tbl-scroll"><table class="t dict"><thead><tr><th>欄位</th><th>型別</th><th>說明</th></tr></thead><tbody>
+        ${t.cols.map(([c, ty, k, d]) => `<tr><td>${c}${k ? `<span class="k ${k}">${k}</span>` : ''}</td><td>${ty}</td><td>${esc(d)}</td></tr>`).join('')}
+      </tbody></table></div></div>
+      <div><h4 style="margin-top:0">樣本資料（全部 ${t.rows.length} 筆）</h4>${renderTable(t.cols.map(c => c[0]), t.rows)}</div>
+    </div>`;
+}
+$('#ttabs').innerHTML = DATA.tables.map((t, i) => `<button class="tab" role="tab" data-i="${i}">${t.name}<small>${t.rows.length}</small></button>`).join('');
+document.querySelectorAll('#ttabs .tab').forEach(b => b.addEventListener('click', () => showTable(+b.dataset.i)));
+erd.querySelectorAll('.erd-table').forEach(g => { g.style.cursor = 'pointer'; g.addEventListener('click', () => showTable(TABLE_NAMES.indexOf(g.dataset.table))); });
+showTable(3);
+$('#ddl').innerHTML = highlight(DATA.seed);
+
+/* ---------- 3 查詢操作 ---------- */
+let cur = 0;
+const qEd = makeEditor($('#qEditor'), '', () => runQuery());
+$('#qlist').innerHTML = DATA.queries.map((q, i) =>
+  `<button class="qbtn" role="listitem" data-i="${i}"><span class="no">Q${i + 1}</span><span><span class="tt">${esc(q.title)}</span><span class="tp">${esc(q.topic)}</span></span></button>`).join('');
+document.querySelectorAll('.qbtn').forEach(b => b.addEventListener('click', () => selectQuery(+b.dataset.i)));
+function selectQuery(i){
+  cur = i; const q = DATA.queries[i];
+  document.querySelectorAll('.qbtn').forEach((b, j) => b.setAttribute('aria-current', i === j));
+  $('#qWho').textContent = q.who; $('#qTopic').textContent = q.topic;
+  $('#qTitle').textContent = `Q${i + 1}. ${q.title}`; $('#qQuestion').textContent = q.question;
+  $('#qExplain').textContent = q.explain;
+  $('#qTry').innerHTML = `<b>試著修改：</b>${esc(q.try)}`;
+  qEd.value = q.sql;
+  $('#qExpected').innerHTML = renderTable(q.expected.columns, q.expected.values);
+  $('#qExpMeta').textContent = `${q.expected.values.length} 列`;
+  $('#qActual').innerHTML = '<div class="empty">尚未執行。修改上方 SQL 後按「▶ 執行」。</div>';
+  $('#qBadge').innerHTML = '';
+  updateUses();
+}
+function updateUses(){
+  const used = tablesUsed(qEd.value);
+  $('#qUses').innerHTML = used.length ? '用到的資料表：' + used.map(t => `<code>${t}</code>`).join('') : '';
+}
+$('#qEditor').addEventListener('input', updateUses);
+function runQuery(){
+  if (!SQL) return;
+  const q = DATA.queries[cur], res = runSQL(qEd.value);
+  $('#qActual').innerHTML = renderRun(res);
+  const s = lastSet(res);
+  if (res.error) $('#qBadge').innerHTML = '<span class="badge err">執行錯誤</span>';
+  else if (!s) $('#qBadge').innerHTML = '<span class="badge diff">無結果集</span>';
+  else {
+    const same = JSON.stringify(s.columns) === JSON.stringify(q.expected.columns) && JSON.stringify(s.values) === JSON.stringify(q.expected.values);
+    $('#qBadge').innerHTML = `<span class="meta">${s.values.length} 列 · ${res.ms.toFixed(1)} ms</span> ` + (same ? '<span class="badge ok">✓ 與預期相同</span>' : '<span class="badge diff">與預期不同</span>');
+  }
+}
+$('#qRun').addEventListener('click', runQuery);
+$('#qReset').addEventListener('click', () => { qEd.value = DATA.queries[cur].sql; updateUses(); });
+selectQuery(0);
+
+/* ---------- 4 結果比較 ---------- */
+const cmpRunners = [];
+$('#cmpList').innerHTML = DATA.compares.map((c, ci) => {
+  const qi = DATA.queries.findIndex(q => q.id === c.ref);
+  return `<article class="card cmp" id="${c.id}">
+    <div class="cmp-head"><span class="no">比較 ${ci + 1}</span><h3>${esc(c.title)}</h3></div>
+    <p class="qq">問題：<b>${esc(c.question)}</b>　·　相關查詢 <a href="#query" data-q="${qi}">Q${qi + 1}</a></p>
+    <div class="variants">${c.variants.map((v, vi) => `
+      <div class="var" data-c="${ci}" data-v="${vi}">
+        <div class="var-top"><b>${esc(v.label)}</b>${vi === c.variants.length - 1 ? '<span class="vtag good">✓ 正確寫法</span>' : '<span class="vtag bad">✗ 有問題</span>'}</div>
+        <div class="editor"></div>
+        <div class="toolbar" style="margin:0"><button class="btn primary" data-run disabled>▶ 執行</button><button class="btn" data-reset>↺ 還原</button></div>
+        <div class="note"></div>
+        <div class="out"><div class="empty">等待 SQLite 載入…</div></div>
+      </div>`).join('')}
+    </div>
+    <div class="why"><h4>結果如何改變？為什麼？</h4>${c.explain.split('\n').map(p => `<p>${esc(p)}</p>`).join('')}</div>
+  </article>`;
+}).join('');
+document.querySelectorAll('#cmpList a[data-q]').forEach(a => a.addEventListener('click', () => selectQuery(+a.dataset.q)));
+DATA.compares.forEach((c, ci) => {
+  const editors = [], results = [];
+  const cards = [...document.querySelectorAll(`.var[data-c="${ci}"]`)];
+  const refresh = () => {
+    const ref = results[results.length - 1];
+    const refSet = ref && lastSet(ref);
+    const refKeys = new Set(refSet ? refSet.values.map(r => JSON.stringify(r)) : []);
+    cards.forEach((card, vi) => {
+      const res = results[vi]; if (!res) return;
+      const s = lastSet(res), isRef = vi === cards.length - 1;
+      let extra = null, note = '';
+      if (res.error) note = '<span class="lost">執行失敗</span>';
+      else if (s) {
+        note = `${s.values.length} 列`;
+        if (!isRef && refSet) {
+          const mine = new Set(s.values.map(r => JSON.stringify(r)));
+          extra = new Set([...mine].filter(k => !refKeys.has(k)));
+          const lost = [...refKeys].filter(k => !mine.has(k)).length;
+          note += extra.size || lost ? ` · 與正確版相比：<span class="lost">多 ${extra.size} 列、少 ${lost} 列</span>` : ' · 與正確版相同';
+        }
+      }
+      card.querySelector('.note').innerHTML = note;
+      card.querySelector('.out').innerHTML = renderRun(res, extra);
+    });
+  };
+  cards.forEach((card, vi) => {
+    const run = () => { if (!SQL) return; results[vi] = runSQL(editors[vi].value); refresh(); };
+    editors[vi] = makeEditor(card.querySelector('.editor'), c.variants[vi].sql, run);
+    card.querySelector('[data-run]').addEventListener('click', run);
+    card.querySelector('[data-reset]').addEventListener('click', () => { editors[vi].value = c.variants[vi].sql; run(); });
+    cmpRunners.push(run);
+  });
+});
+
+/* ---------- 啟動 ---------- */
+initSqlJs({ locateFile: f => 'lib/' + f }).then(S => {
+  SQL = S;
+  const st = $('#status'); st.classList.add('ok'); st.querySelector('span').textContent = '就緒';
+  document.querySelectorAll('button[disabled]').forEach(b => b.disabled = false);
+  cmpRunners.forEach(r => r());
+}).catch(e => {
+  const st = $('#status'); st.classList.add('err'); st.querySelector('span').textContent = '載入失敗';
+  document.querySelectorAll('.out .empty, #qActual .empty').forEach(el => el.textContent = 'SQLite 載入失敗：' + e.message + '（若直接雙擊開啟檔案，請改用 GitHub Pages 或本機伺服器開啟）');
+});
+</script>
+</body>
+</html>

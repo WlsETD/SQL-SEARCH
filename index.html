@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>澄海渡假村 · SQL 查詢練習</title>
+<meta name="description" content="渡假村訂房與設施管理資料庫：ERD、欄位說明、樣本資料，以及可在瀏覽器直接修改並執行的 SQL 查詢。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5efe3; --surface:#fffdf8; --surface-2:#f9f4ea; --ink:#1b2a2c; --muted:#5f6c6a; --line:#e3d8c4;
+  --sea:#0d6b67; --sea-soft:#d8ece8; --coral:#c9562c; --coral-soft:#f8e2d6; --sun:#b98a1d; --good:#2c7a4b; --good-soft:#dcefe2; --bad:#b3372b; --bad-soft:#f7dcd8;
+  --code-bg:#14272a; --code-ink:#e6efe9; --code-kw:#7fd1c4; --code-str:#f2b880; --code-num:#e8a3c9; --code-fn:#a9c7ff; --code-cm:#7a8f8c;
+  --shadow:0 1px 2px rgba(27,42,44,.06),0 8px 24px rgba(27,42,44,.06);
+  --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,"Noto Sans TC",monospace;
+  --sans:"Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --serif:"Noto Serif TC","Songti TC",serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0e1819; --surface:#152224; --surface-2:#1a2a2c; --ink:#e7eeea; --muted:#9aaba8; --line:#28393b;
+  --sea:#5cc0b4; --sea-soft:#173a38; --coral:#f08a5d; --coral-soft:#3b2419; --sun:#e0b54a; --good:#6fcf97; --good-soft:#163323; --bad:#ff8a7a; --bad-soft:#3a1c18;
+  --code-bg:#0a1415; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--sea)}
+h1,h2,h3{font-family:var(--serif);line-height:1.3;margin:0}
+code,kbd{font-family:var(--mono);font-size:.88em}
+p code,li code,td code{background:var(--surface-2);border:1px solid var(--line);padding:0 .35em;border-radius:5px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+@media (max-width:600px){.wrap{padding:0 16px}}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:20px;height:56px}
+.brand{font-family:var(--serif);font-weight:900;font-size:18px;text-decoration:none;color:var(--ink);white-space:nowrap}
+.brand span{color:var(--sea)}
+.nav nav{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex:1}
+.nav nav a{color:var(--muted);text-decoration:none;font-size:14px;padding:6px 10px;border-radius:8px;white-space:nowrap}
+.nav nav a:hover{background:var(--surface-2);color:var(--ink)}
+.status{font-size:12px;display:flex;align-items:center;gap:6px;color:var(--muted);white-space:nowrap}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--sun);display:inline-block}
+.status.ok i{background:var(--good)} .status.err i{background:var(--bad)}
+@media (max-width:720px){.brand{display:none}.status b{display:none}}
+
+/* hero */
+.hero{position:relative;overflow:hidden;padding:64px 0 56px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--sea-soft),transparent 85%)}
+.hero .eyebrow{font-size:13px;letter-spacing:.18em;color:var(--sea);font-weight:700}
+.hero h1{font-size:clamp(34px,6vw,60px);font-weight:900;margin:10px 0 12px}
+.hero p.lead{font-size:18px;color:var(--muted);max-width:640px;margin:0}
+.stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.stats div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 16px;box-shadow:var(--shadow)}
+.stats b{font-family:var(--serif);font-size:24px;color:var(--sea);margin-right:6px}
+.stats span{font-size:14px;color:var(--muted)}
+.waves{position:absolute;right:-40px;bottom:-10px;width:520px;max-width:70%;opacity:.5;pointer-events:none}
+.waves path{fill:none;stroke:var(--sea);stroke-width:2}
+
+/* sections */
+section.sec{padding:64px 0;border-bottom:1px solid var(--line)}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+.sec-num{font-family:var(--serif);font-weight:900;font-size:15px;color:var(--coral);border:1.5px solid var(--coral);border-radius:999px;width:32px;height:32px;display:grid;place-items:center;flex:none;transform:translateY(-3px)}
+.sec-head h2{font-size:clamp(26px,3.6vw,34px)}
+.sec-sub{color:var(--muted);margin:0 0 32px;max-width:760px}
+h3.sub{font-size:20px;margin:40px 0 14px}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+.grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.who{padding:18px 18px 14px}
+.who .role{font-weight:700;font-size:17px;display:flex;align-items:center;gap:8px}
+.who .role em{font-style:normal;font-size:20px}
+.who ul{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:14.5px}
+.story{padding:22px 24px;font-size:16.5px}
+.story p{margin:0 0 10px}.story p:last-child{margin:0}
+.pain{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.pain a{display:flex;gap:12px;text-decoration:none;color:var(--ink);padding:14px 16px;align-items:flex-start}
+.pain a:hover{border-color:var(--sea)}
+.pain .tag{flex:none;font:600 12px var(--mono);color:var(--sea);background:var(--sea-soft);border-radius:6px;padding:2px 7px;margin-top:3px}
+.pain .q{font-weight:500}
+.pain .d{font-size:14px;color:var(--muted)}
+.rules{counter-reset:r;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;padding:0;margin:0;list-style:none}
+.rules li{counter-increment:r;padding:14px 16px 14px 52px;position:relative;font-size:15px}
+.rules li::before{content:counter(r);position:absolute;left:16px;top:14px;width:24px;height:24px;border-radius:50%;background:var(--coral-soft);color:var(--coral);font:700 13px/24px var(--sans);text-align:center}
+.rules b{display:block;margin-bottom:2px}
+.rules span{color:var(--muted)}
+
+/* ERD */
+.erd-wrap{padding:16px;overflow-x:auto}
+.erd{width:100%;min-width:760px;height:auto;display:block}
+.erd-box{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.erd-head{fill:var(--sea)}
+.erd-title{fill:#fff;font:700 15px var(--mono)}
+.erd-zh{font:500 13px var(--sans);fill:#fff;opacity:.85}
+.erd-col{fill:var(--ink);font:13px var(--mono)} .erd-col.is-pk{font-weight:600;text-decoration:underline}
+.erd-type{fill:var(--muted);font:11px var(--mono)}
+.erd-key{font:700 10px var(--mono)} .erd-key-pk{fill:var(--sun)} .erd-key-fk{fill:var(--coral)} .erd-key-uq{fill:var(--muted)}
+.erd-sep{stroke:var(--line)}
+.erd-link{fill:none;stroke:var(--muted);stroke-width:1.6}
+.erd-mk{fill:none;stroke:var(--muted);stroke-width:1.6}
+.erd-table{transition:opacity .2s}
+.erd.focus .erd-table:not(.on){opacity:.28}
+.erd.focus .erd-link:not(.on){opacity:.15}
+.erd .erd-table.on .erd-box{stroke:var(--sea);stroke-width:2.5}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13.5px;color:var(--muted);padding:4px 4px 0}
+.legend b{font-family:var(--mono);font-size:12px}
+.legend .pk{color:var(--sun)} .legend .fk{color:var(--coral)}
+.rels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px;margin-top:14px;font-size:14.5px}
+.rels div{padding:10px 14px;border:1px dashed var(--line);border-radius:10px}
+.rels code{background:none;border:0;padding:0;color:var(--sea)}
+
+/* tabs & data tables */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tab{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 14px;font:500 14px var(--sans);cursor:pointer}
+.tab small{font-family:var(--mono);color:var(--muted);margin-left:6px}
+.tab[aria-selected="true"]{background:var(--sea);border-color:var(--sea);color:#fff}
+.tab[aria-selected="true"] small{color:#fff;opacity:.8}
+.tpanel{padding:20px}
+.tpanel .tdesc{margin:0 0 14px;color:var(--muted)}
+.tpanel h4{margin:22px 0 8px;font-size:15px}
+.dual{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:22px}
+@media (max-width:900px){.dual{grid-template-columns:minmax(0,1fr)}}
+.tbl-scroll{overflow:auto;border:1px solid var(--line);border-radius:10px;max-height:440px;background:var(--surface)}
+table.t{border-collapse:collapse;width:100%;font-size:13.5px}
+table.t th,table.t td{padding:7px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+table.t th{position:sticky;top:0;background:var(--surface-2);font:600 12.5px var(--mono);color:var(--muted);z-index:1}
+table.t td.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+table.t tr:last-child td{border-bottom:0}
+table.t .null{color:var(--muted);font:italic 12px var(--mono);opacity:.75}
+table.t tr.extra td{background:var(--bad-soft)}
+table.t tr.extra td:first-child{box-shadow:inset 3px 0 var(--bad)}
+.dict td:first-child{font-family:var(--mono);font-weight:600}
+.dict td:nth-child(2){font-family:var(--mono);font-size:12px;color:var(--muted)}
+.dict td:last-child{white-space:normal}
+.k{font:700 10.5px var(--mono);padding:1px 5px;border-radius:4px;margin-left:6px;vertical-align:1px}
+.k.PK{background:color-mix(in srgb,var(--sun) 20%,transparent);color:var(--sun)}
+.k.FK{background:var(--coral-soft);color:var(--coral)}
+.k.UQ{background:var(--surface-2);color:var(--muted)}
+details.ddl{margin-top:18px}
+details.ddl summary{cursor:pointer;color:var(--sea);font-weight:500}
+
+/* code */
+pre.code,.editor pre,.editor textarea{font:13.5px/1.65 var(--mono);tab-size:2}
+pre.code{margin:10px 0 0;background:var(--code-bg);color:var(--code-ink);padding:16px 18px;border-radius:12px;overflow:auto;max-height:420px}
+.tk-kw{color:var(--code-kw);font-weight:600}.tk-str{color:var(--code-str)}.tk-num{color:var(--code-num)}.tk-fn{color:var(--code-fn)}.tk-cm{color:var(--code-cm);font-style:italic}
+.editor{position:relative;background:var(--code-bg);border-radius:12px;overflow:hidden;border:1px solid transparent}
+.editor:focus-within{border-color:var(--sea);box-shadow:0 0 0 3px color-mix(in srgb,var(--sea) 25%,transparent)}
+.editor pre,.editor textarea{margin:0;padding:16px 18px;white-space:pre;overflow:auto;border:0;width:100%;letter-spacing:0;word-spacing:0}
+.editor pre{position:absolute;inset:0;color:var(--code-ink);pointer-events:none;overflow:hidden}
+.editor textarea{position:relative;display:block;resize:none;background:transparent;color:transparent;caret-color:#fff;outline:none;min-height:120px;overflow-y:hidden}
+.editor textarea::selection{background:rgba(127,209,196,.3);color:transparent}
+
+/* query workspace */
+.ws{display:grid;grid-template-columns:280px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:960px){.ws{grid-template-columns:minmax(0,1fr)}}
+.qlist{display:flex;flex-direction:column;gap:6px;position:sticky;top:76px}
+@media (max-width:960px){.qlist{position:static;flex-direction:row;overflow-x:auto;padding-bottom:6px}}
+.qbtn{appearance:none;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;cursor:pointer;color:var(--ink);font:inherit;display:flex;gap:10px}
+@media (max-width:960px){.qbtn{min-width:210px}}
+.qbtn .no{font:700 13px var(--mono);color:var(--muted);flex:none;width:22px}
+.qbtn .tt{font-size:14.5px;font-weight:500;line-height:1.45}
+.qbtn .tp{display:block;font:11.5px var(--mono);color:var(--muted);margin-top:2px}
+.qbtn[aria-current="true"]{border-color:var(--sea);background:var(--sea-soft)}
+.qbtn[aria-current="true"] .no{color:var(--sea)}
+.qmain{padding:22px}
+.qtop{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px}
+.pill{font-size:12px;padding:2px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
+.pill.role{background:var(--coral-soft);border-color:transparent;color:var(--coral);font-weight:500}
+.qmain h3{font-size:22px;margin:4px 0 6px}
+.qmain .qq{margin:0 0 14px;font-size:16px}
+.uses{font-size:13px;color:var(--muted);margin:10px 0 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.uses code{background:var(--sea-soft);border:0;color:var(--sea);padding:1px 7px;border-radius:6px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 0}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:8px 14px;font:500 14px var(--sans);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--sea)}
+.btn.primary{background:var(--sea);border-color:var(--sea);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.hint{font-size:12.5px;color:var(--muted)}
+.tip{margin-top:14px;font-size:14.5px;background:var(--surface-2);border-left:3px solid var(--sun);padding:10px 14px;border-radius:0 10px 10px 0}
+.tip b{color:var(--sun)}
+details.ex{margin-top:12px;font-size:14.5px}
+details.ex summary{cursor:pointer;color:var(--sea);font-weight:500}
+details.ex p{margin:8px 0 0;color:var(--ink)}
+.results{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:20px}
+@media (max-width:1100px){.results{grid-template-columns:minmax(0,1fr)}}
+.rhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.rhead h4{margin:0;font-size:15px}
+.meta{font-size:12.5px;color:var(--muted)}
+.badge{font-size:12.5px;font-weight:600;padding:2px 10px;border-radius:999px}
+.badge.ok{background:var(--good-soft);color:var(--good)} .badge.diff{background:var(--coral-soft);color:var(--coral)} .badge.err{background:var(--bad-soft);color:var(--bad)}
+.empty{border:1.5px dashed var(--line);border-radius:10px;padding:28px 16px;text-align:center;color:var(--muted);font-size:14px}
+.errbox{border:1px solid var(--bad);background:var(--bad-soft);color:var(--bad);border-radius:10px;padding:12px 14px;font:13.5px/1.6 var(--mono);white-space:pre-wrap}
+.errbox b{font-family:var(--sans)}
+.okbox{border:1px solid var(--good);background:var(--good-soft);color:var(--good);border-radius:10px;padding:12px 14px;font-size:14px}
+.multi{font-size:12.5px;color:var(--muted);margin:10px 0 4px;font-family:var(--mono)}
+
+/* compare */
+.cmp{padding:22px;margin-bottom:22px}
+.cmp-head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline}
+.cmp-head h3{font-size:21px}
+.cmp-head .no{font:700 14px var(--mono);color:var(--coral)}
+.cmp .qq{margin:6px 0 16px;color:var(--muted)}
+.cmp .qq b{color:var(--ink);font-weight:500}
+.variants{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
+.var{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--surface-2);min-width:0;display:flex;flex-direction:column;gap:10px}
+.var-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.var-top b{font-size:14.5px}
+.vtag{font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px}
+.vtag.bad{background:var(--bad-soft);color:var(--bad)} .vtag.good{background:var(--good-soft);color:var(--good)}
+.var .editor textarea,.var .editor pre{font-size:12.5px;padding:12px 14px}
+.var .editor textarea{min-height:80px}
+.var .tbl-scroll{max-height:320px}
+.var .note{font-size:13px;color:var(--muted)}
+.var .note .lost{color:var(--bad);font-weight:600}
+.why{margin-top:16px;padding:16px 18px;border-radius:12px;background:var(--sea-soft);font-size:15px}
+.why h4{margin:0 0 6px;font-size:15px;color:var(--sea)}
+.why p{margin:0 0 6px}.why p:last-child{margin:0}
+
+footer{padding:40px 0 60px;color:var(--muted);font-size:14px}
+footer p{margin:4px 0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top">澄海<span>渡假村</span></a>
+    <nav aria-label="章節">
+      <a href="#case">1 案例背景</a><a href="#design">2 資料庫設計</a><a href="#query">3 查詢操作</a><a href="#compare">4 結果比較</a>
+    </nav>
+    <div class="status" id="status" role="status"><i></i><b>SQLite</b><span>載入中…</span></div>
+  </div>
+</header>
+
+<div class="hero" id="top">
+  <svg class="waves" viewBox="0 0 520 160" aria-hidden="true">
+    <path d="M0 40 Q 32 20 65 40 T 130 40 T 195 40 T 260 40 T 325 40 T 390 40 T 455 40 T 520 40"/>
+    <path d="M0 80 Q 32 60 65 80 T 130 80 T 195 80 T 260 80 T 325 80 T 390 80 T 455 80 T 520 80" opacity=".6"/>
+    <path d="M0 120 Q 32 100 65 120 T 130 120 T 195 120 T 260 120 T 325 120 T 390 120 T 455 120 T 520 120" opacity=".3"/>
+  </svg>
+  <div class="wrap">
+    <div class="eyebrow">DATABASE · SQL QUERY PRACTICE</div>
+    <h1>澄海渡假村<br>訂房與設施資料庫</h1>
+    <p class="lead">一間虛構的海濱渡假村，用關聯式資料庫管理客房、訂單與設施預約。所有 SQL 都在你的瀏覽器裡以 SQLite 執行，可以直接修改、執行、看結果或錯誤訊息。</p>
+    <div class="stats" id="stats"></div>
+  </div>
+</div>
+
+<main>
+<!-- 1 -->
+<section class="sec" id="case">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">1</span><h2>案例背景</h2></div>
+    <p class="sec-sub">這個資料庫給誰用？要解決什麼問題？</p>
+
+    <div class="card story">
+      <p>澄海渡假村位於恆春半島海邊（虛構），共有 <b>12 間客房</b>，分成標準雙人房、豪華海景房、家庭四人房與私人泳池別墅四種房型，另外提供 SPA、浮潛、立槳、海灘燒烤與親子課程等設施。</p>
+      <p>過去訂房靠紙本登記加上 Excel，常出包：<b>同一間房在聖誕節被重複賣出</b>、<b>取消的訂單被算進營收</b>、經理不知道哪間房一直空著、行銷也說不出誰是高消費旅客。因此改用關聯式資料庫，把「旅客、客房、訂單、設施」拆成彼此關聯的資料表，讓每個部門都能用 SQL 找到答案。</p>
+    </div>
+
+    <h3 class="sub">使用者</h3>
+    <div class="grid-4">
+      <div class="card who"><div class="role"><em>🛎️</em>櫃檯人員</div><ul><li>查某段日期還有哪些空房</li><li>依旅客需求找房（海景、人數）</li></ul></div>
+      <div class="card who"><div class="role"><em>📊</em>營運經理</div><ul><li>各房型營收與住房晚數</li><li>找出閒置、乏人問津的房間</li><li>設施熱門排行</li></ul></div>
+      <div class="card who"><div class="role"><em>🧾</em>財務</div><ul><li>每筆訂單的房費結算</li><li>排除取消單、找出高額訂單</li></ul></div>
+      <div class="card who"><div class="role"><em>💌</em>行銷</div><ul><li>各會員等級的貢獻</li><li>設施消費大戶，安排回饋</li></ul></div>
+    </div>
+
+    <h3 class="sub">要解決的問題 → 對應查詢</h3>
+    <div class="pain" id="painList"></div>
+
+    <h3 class="sub">設計時的商業規則</h3>
+    <ol class="rules">
+      <li class="card"><b>房型資訊只存一次</b><span>名稱、人數、定價放在 <code>room_type</code>，每間 <code>room</code> 只記 <code>type_id</code>，調價只要改一列（正規化，避免重複與不一致）。</span></li>
+      <li class="card"><b>訂單保存「成交價」</b><span><code>booking.price_per_night</code> 是訂房當下的價格，與定價 <code>base_price</code> 分開；有 VIP 折扣、聖誕加價，日後調價也不影響舊訂單。</span></li>
+      <li class="card"><b>取消不刪除</b><span>取消的訂單改 <code>status = '已取消'</code> 保留紀錄，所以統計營收、查空房時都要記得排除。</span></li>
+      <li class="card"><b>住宿區間是 [入住, 退房)</b><span>退房日當天可以讓下一位旅客入住，兩筆訂單「重疊」的判斷要用 &lt; 與 &gt;。</span></li>
+      <li class="card"><b>設施使用掛在訂單下</b><span><code>facility_order</code> 參照 <code>booking</code> 而非 <code>guest</code>，才知道是哪一次住宿的消費，也能跟房費一起結帳。</span></li>
+      <li class="card"><b>NULL 代表非會員</b><span><code>guest.member_level</code> 允許 NULL；查詢時要用 <code>IS NULL</code> 或 <code>COALESCE</code> 處理。</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="sec" id="design">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">2</span><h2>資料庫設計</h2></div>
+    <p class="sec-sub">6 張資料表、5 個一對多關聯。點選下方資料表可在 ERD 中標示它與相鄰的表。</p>
+
+    <div class="card erd-wrap">
+      <svg class="erd" viewBox="0 0 970 520" role="img" aria-label="渡假村資料庫 ERD">
+<defs>
+  <marker id="many" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path class="erd-mk" d="M0 7L14 1M0 7L14 7M0 7L14 13"/></marker>
+  <marker id="one" viewBox="0 0 14 14" refX="14" refY="7" markerWidth="14" markerHeight="14" orient="auto" markerUnits="userSpaceOnUse"><path class="erd-mk" d="M6 1V13M10 1V13"/></marker>
+</defs>
+<path class="erd-link" data-from="room" data-to="room_type" d="M825 189V330" marker-start="url(#many)" marker-end="url(#one)"><title>room.type_id → room_type.type_id：一種房型有多間客房</title></path>
+<path class="erd-link" data-from="booking" data-to="guest" d="M360 97.5H320V72.5H270" marker-start="url(#many)" marker-end="url(#one)"><title>booking.guest_id → guest.guest_id：一位旅客可有多筆訂單</title></path>
+<path class="erd-link" data-from="booking" data-to="room" d="M610 122.5H650V72.5H700" marker-start="url(#many)" marker-end="url(#one)"><title>booking.room_no → room.room_no：一間客房可被訂多次</title></path>
+<path class="erd-link" data-from="facility_order" data-to="booking" d="M485 330V264" marker-start="url(#many)" marker-end="url(#one)"><title>facility_order.booking_id → booking.booking_id：一筆訂單可加購多項設施</title></path>
+<path class="erd-link" data-from="facility_order" data-to="facility" d="M360 432.5H320V382.5H270" marker-start="url(#many)" marker-end="url(#one)"><title>facility_order.facility_id → facility.facility_id：一項設施可被多次使用</title></path>
+<g class="erd-table" data-table="guest">
+  <rect class="erd-box" x="20" y="20" width="250" height="169" rx="10"/>
+  <path class="erd-head" d="M20 56V30a10 10 0 0 1 10-10h230a10 10 0 0 1 10 10V56Z"/>
+  <text class="erd-title" x="34" y="44">guest<tspan class="erd-zh" dx="8">旅客</tspan></text><text class="erd-key erd-key-pk" x="34" y="76.5">PK</text><text class="erd-col is-pk" x="66" y="76.5">guest_id</text><text class="erd-type" x="256" y="76.5" text-anchor="end">INTEGER</text><line class="erd-sep" x1="30" x2="260" y1="85" y2="85"/><text class="erd-col" x="66" y="101.5">name</text><text class="erd-type" x="256" y="101.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="30" x2="260" y1="110" y2="110"/><text class="erd-key erd-key-uq" x="34" y="126.5">UQ</text><text class="erd-col" x="66" y="126.5">phone</text><text class="erd-type" x="256" y="126.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="30" x2="260" y1="135" y2="135"/><text class="erd-col" x="66" y="151.5">city</text><text class="erd-type" x="256" y="151.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="30" x2="260" y1="160" y2="160"/><text class="erd-col" x="66" y="176.5">member_level</text><text class="erd-type" x="256" y="176.5" text-anchor="end">TEXT</text></g>
+<g class="erd-table" data-table="booking">
+  <rect class="erd-box" x="360" y="20" width="250" height="244" rx="10"/>
+  <path class="erd-head" d="M360 56V30a10 10 0 0 1 10-10h230a10 10 0 0 1 10 10V56Z"/>
+  <text class="erd-title" x="374" y="44">booking<tspan class="erd-zh" dx="8">訂房</tspan></text><text class="erd-key erd-key-pk" x="374" y="76.5">PK</text><text class="erd-col is-pk" x="406" y="76.5">booking_id</text><text class="erd-type" x="596" y="76.5" text-anchor="end">INTEGER</text><line class="erd-sep" x1="370" x2="600" y1="85" y2="85"/><text class="erd-key erd-key-fk" x="374" y="101.5">FK</text><text class="erd-col" x="406" y="101.5">guest_id</text><text class="erd-type" x="596" y="101.5" text-anchor="end">INTEGER</text><line class="erd-sep" x1="370" x2="600" y1="110" y2="110"/><text class="erd-key erd-key-fk" x="374" y="126.5">FK</text><text class="erd-col" x="406" y="126.5">room_no</text><text class="erd-type" x="596" y="126.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="370" x2="600" y1="135" y2="135"/><text class="erd-col" x="406" y="151.5">check_in</text><text class="erd-type" x="596" y="151.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="370" x2="600" y1="160" y2="160"/><text class="erd-col" x="406" y="176.5">check_out</text><text class="erd-type" x="596" y="176.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="370" x2="600" y1="185" y2="185"/><text class="erd-col" x="406" y="201.5">adults</text><text class="erd-type" x="596" y="201.5" text-anchor="end">INTEGER</text><line class="erd-sep" x1="370" x2="600" y1="210" y2="210"/><text class="erd-col" x="406" y="226.5">price_per_night</text><text class="erd-type" x="596" y="226.5" text-anchor="end">INTEGER</text><line class="erd-sep" x1="370" x2="600" y1="235" y2="235"/><text class="erd-col" x="406" y="251.5">status</text><text class="erd-type" x="596" y="251.5" text-anchor="end">TEXT</text></g>
+<g class="erd-table" data-table="room">
+  <rect class="erd-box" x="700" y="20" width="250" height="169" rx="10"/>
+  <path class="erd-head" d="M700 56V30a10 10 0 0 1 10-10h230a10 10 0 0 1 10 10V56Z"/>
+  <text class="erd-title" x="714" y="44">room<tspan class="erd-zh" dx="8">客房</tspan></text><text class="erd-key erd-key-pk" x="714" y="76.5">PK</text><text class="erd-col is-pk" x="746" y="76.5">room_no</text><text class="erd-type" x="936" y="76.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="710" x2="940" y1="85" y2="85"/><text class="erd-key erd-key-fk" x="714" y="101.5">FK</text><text class="erd-col" x="746" y="101.5">type_id</text><text class="erd-type" x="936" y="101.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="710" x2="940" y1="110" y2="110"/><text class="erd-col" x="746" y="126.5">floor</text><text class="erd-type" x="936" y="126.5" text-anchor="end">INTEGER</text><line class="erd-sep" x1="710" x2="940" y1="135" y2="135"/><text class="erd-col" x="746" y="151.5">view</text><text class="erd-type" x="936" y="151.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="710" x2="940" y1="160" y2="160"/><text class="erd-col" x="746" y="176.5">status</text><text class="erd-type" x="936" y="176.5" text-anchor="end">TEXT</text></g>
+<g class="erd-table" data-table="facility">
+  <rect class="erd-box" x="20" y="330" width="250" height="144" rx="10"/>
+  <path class="erd-head" d="M20 366V340a10 10 0 0 1 10-10h230a10 10 0 0 1 10 10V366Z"/>
+  <text class="erd-title" x="34" y="354">facility<tspan class="erd-zh" dx="8">設施</tspan></text><text class="erd-key erd-key-pk" x="34" y="386.5">PK</text><text class="erd-col is-pk" x="66" y="386.5">facility_id</text><text class="erd-type" x="256" y="386.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="30" x2="260" y1="395" y2="395"/><text class="erd-col" x="66" y="411.5">facility_name</text><text class="erd-type" x="256" y="411.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="30" x2="260" y1="420" y2="420"/><text class="erd-col" x="66" y="436.5">category</text><text class="erd-type" x="256" y="436.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="30" x2="260" y1="445" y2="445"/><text class="erd-col" x="66" y="461.5">unit_price</text><text class="erd-type" x="256" y="461.5" text-anchor="end">INTEGER</text></g>
+<g class="erd-table" data-table="facility_order">
+  <rect class="erd-box" x="360" y="330" width="250" height="169" rx="10"/>
+  <path class="erd-head" d="M360 366V340a10 10 0 0 1 10-10h230a10 10 0 0 1 10 10V366Z"/>
+  <text class="erd-title" x="374" y="354">facility_order<tspan class="erd-zh" dx="8">設施使用</tspan></text><text class="erd-key erd-key-pk" x="374" y="386.5">PK</text><text class="erd-col is-pk" x="406" y="386.5">order_id</text><text class="erd-type" x="596" y="386.5" text-anchor="end">INTEGER</text><line class="erd-sep" x1="370" x2="600" y1="395" y2="395"/><text class="erd-key erd-key-fk" x="374" y="411.5">FK</text><text class="erd-col" x="406" y="411.5">booking_id</text><text class="erd-type" x="596" y="411.5" text-anchor="end">INTEGER</text><line class="erd-sep" x1="370" x2="600" y1="420" y2="420"/><text class="erd-key erd-key-fk" x="374" y="436.5">FK</text><text class="erd-col" x="406" y="436.5">facility_id</text><text class="erd-type" x="596" y="436.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="370" x2="600" y1="445" y2="445"/><text class="erd-col" x="406" y="461.5">use_date</text><text class="erd-type" x="596" y="461.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="370" x2="600" y1="470" y2="470"/><text class="erd-col" x="406" y="486.5">quantity</text><text class="erd-type" x="596" y="486.5" text-anchor="end">INTEGER</text></g>
+<g class="erd-table" data-table="room_type">
+  <rect class="erd-box" x="700" y="330" width="250" height="144" rx="10"/>
+  <path class="erd-head" d="M700 366V340a10 10 0 0 1 10-10h230a10 10 0 0 1 10 10V366Z"/>
+  <text class="erd-title" x="714" y="354">room_type<tspan class="erd-zh" dx="8">房型</tspan></text><text class="erd-key erd-key-pk" x="714" y="386.5">PK</text><text class="erd-col is-pk" x="746" y="386.5">type_id</text><text class="erd-type" x="936" y="386.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="710" x2="940" y1="395" y2="395"/><text class="erd-col" x="746" y="411.5">type_name</text><text class="erd-type" x="936" y="411.5" text-anchor="end">TEXT</text><line class="erd-sep" x1="710" x2="940" y1="420" y2="420"/><text class="erd-col" x="746" y="436.5">capacity</text><text class="erd-type" x="936" y="436.5" text-anchor="end">INTEGER</text><line class="erd-sep" x1="710" x2="940" y1="445" y2="445"/><text class="erd-col" x="746" y="461.5">base_price</text><text class="erd-type" x="936" y="461.5" text-anchor="end">INTEGER</text></g>
+</svg>
+      <div class="legend">
+        <span><b class="pk">PK</b> 主鍵（底線）</span><span><b class="fk">FK</b> 外來鍵</span><span><b>UQ</b> 唯一值</span>
+        <span>線條：三叉端 = 多（N），雙橫線端 = 一（1）</span>
+      </div>
+    </div>
+    <div class="rels" id="rels"></div>
+
+    <h3 class="sub">欄位說明與樣本資料</h3>
+    <div class="tabs" role="tablist" id="ttabs"></div>
+    <div class="card tpanel" id="tpanel"></div>
+
+    <details class="ddl"><summary>顯示完整的 CREATE TABLE 與 INSERT 指令</summary><pre class="code" id="ddl"></pre></details>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="sec" id="query">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">3</span><h2>查詢操作</h2></div>
+    <p class="sec-sub">選一個問題，閱讀 SQL 與預期結果，然後自由修改、按「執行」看實際結果或錯誤訊息。每次執行都會從原始樣本資料重建資料庫，就算下了 <code>DELETE</code> 或 <code>UPDATE</code> 也不會弄壞其他題目。</p>
+    <div class="ws">
+      <div class="qlist" id="qlist" role="list"></div>
+      <div class="card qmain" id="qmain">
+        <div class="qtop"><span class="pill role" id="qWho"></span><span class="pill" id="qTopic"></span></div>
+        <h3 id="qTitle"></h3>
+        <p class="qq" id="qQuestion"></p>
+        <div class="editor" id="qEditor"></div>
+        <div class="toolbar">
+          <button class="btn primary" id="qRun" disabled>▶ 執行</button>
+          <button class="btn" id="qReset">↺ 還原原範例</button>
+          <span class="hint"><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd> 執行</span>
+        </div>
+        <p class="uses" id="qUses"></p>
+        <div class="tip" id="qTry"></div>
+        <details class="ex"><summary>這段 SQL 在做什麼？</summary><p id="qExplain"></p></details>
+        <div class="results">
+          <div><div class="rhead"><h4>預期結果</h4><span class="meta" id="qExpMeta"></span></div><div id="qExpected"></div></div>
+          <div><div class="rhead"><h4>實際結果</h4><span id="qBadge"></span></div><div id="qActual"><div class="empty">尚未執行。修改上方 SQL 後按「▶ 執行」。</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="sec" id="compare">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num">4</span><h2>結果比較</h2></div>
+    <p class="sec-sub">同一個問題，只改一小段 SQL，結果就可能差很多。每個版本都可以直接修改並重新執行；<span style="background:var(--bad-soft);padding:0 4px;border-radius:4px">紅底</span>的列代表「正確版本裡沒有的列」。</p>
+    <div id="cmpList"></div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>資料為虛構，僅供課程練習。查詢引擎：<a href="https://github.com/sql-js/sql.js">sql.js</a>（SQLite 編譯為 WebAssembly，MIT 授權），全部在瀏覽器端執行，不需伺服器。</p>
+    <p id="author">製作：（請在 index.html 搜尋「製作：」填上姓名與學號）</p>
+  </div>
+</footer>
+
+<script src="lib/sql-wasm.js"></script>
+<script>
+const DATA = {"seed":"PRAGMA foreign_keys = ON;\n\nCREATE TABLE room_type (\n  type_id     TEXT PRIMARY KEY,\n  type_name   TEXT NOT NULL,\n  capacity    INTEGER NOT NULL CHECK (capacity > 0),\n  base_price  INTEGER NOT NULL CHECK (base_price > 0)\n);\n\nCREATE TABLE room (\n  room_no   TEXT PRIMARY KEY,\n  type_id   TEXT NOT NULL REFERENCES room_type(type_id),\n  floor     INTEGER NOT NULL,\n  view      TEXT NOT NULL CHECK (view IN ('海景','山景','花園')),\n  status    TEXT NOT NULL DEFAULT '可使用' CHECK (status IN ('可使用','維修中'))\n);\n\nCREATE TABLE guest (\n  guest_id      INTEGER PRIMARY KEY,\n  name          TEXT NOT NULL,\n  phone         TEXT NOT NULL UNIQUE,\n  city          TEXT,\n  member_level  TEXT CHECK (member_level IN ('一般','金卡','VIP'))  -- NULL = 非會員\n);\n\nCREATE TABLE booking (\n  booking_id       INTEGER PRIMARY KEY,\n  guest_id         INTEGER NOT NULL REFERENCES guest(guest_id),\n  room_no          TEXT    NOT NULL REFERENCES room(room_no),\n  check_in         TEXT    NOT NULL,\n  check_out        TEXT    NOT NULL,\n  adults           INTEGER NOT NULL CHECK (adults > 0),\n  price_per_night  INTEGER NOT NULL,\n  status           TEXT    NOT NULL CHECK (status IN ('已預訂','已入住','已退房','已取消')),\n  CHECK (check_out > check_in)\n);\n\nCREATE TABLE facility (\n  facility_id    TEXT PRIMARY KEY,\n  facility_name  TEXT NOT NULL,\n  category       TEXT NOT NULL,\n  unit_price     INTEGER NOT NULL CHECK (unit_price >= 0)\n);\n\nCREATE TABLE facility_order (\n  order_id     INTEGER PRIMARY KEY,\n  booking_id   INTEGER NOT NULL REFERENCES booking(booking_id),\n  facility_id  TEXT    NOT NULL REFERENCES facility(facility_id),\n  use_date     TEXT    NOT NULL,\n  quantity     INTEGER NOT NULL CHECK (quantity > 0)\n);\n\nINSERT INTO room_type VALUES\n  ('STD', '標準雙人房', 2, 3800),\n  ('DLX', '豪華海景房', 2, 5600),\n  ('FAM', '家庭四人房', 4, 7200),\n  ('VIL', '私人泳池別墅', 6, 15800);\n\nINSERT INTO room VALUES\n  ('101', 'STD', 1, '花園', '可使用'),\n  ('102', 'STD', 1, '花園', '可使用'),\n  ('103', 'STD', 1, '山景', '可使用'),\n  ('201', 'DLX', 2, '海景', '可使用'),\n  ('202', 'DLX', 2, '海景', '可使用'),\n  ('203', 'DLX', 2, '山景', '維修中'),\n  ('301', 'FAM', 3, '海景', '可使用'),\n  ('302', 'FAM', 3, '山景', '可使用'),\n  ('303', 'FAM', 3, '花園', '可使用'),\n  ('V01', 'VIL', 1, '海景', '可使用'),\n  ('V02', 'VIL', 1, '海景', '可使用'),\n  ('V03', 'VIL', 1, '花園', '可使用');\n\nINSERT INTO guest VALUES\n  (1, '林雅婷', '0912-000-101', '台北', 'VIP'),\n  (2, '陳冠宇', '0912-000-102', '台中', '金卡'),\n  (3, '王怡君', '0912-000-103', '高雄', '金卡'),\n  (4, '張家豪', '0912-000-104', '新竹', '一般'),\n  (5, '李佳穎', '0912-000-105', '台北', NULL),\n  (6, '黃俊傑', '0912-000-106', '台南', '一般'),\n  (7, '吳淑芬', '0912-000-107', '桃園', NULL),\n  (8, '劉子晴', '0912-000-108', '台北', 'VIP'),\n  (9, '蔡明哲', '0912-000-109', '香港', NULL),\n  (10, '鄭雨萱', '0912-000-110', '台中', '一般'),\n  (11, '謝承恩', '0912-000-111', '新竹', '一般');\n\nINSERT INTO booking VALUES\n  (1, 1, '201', '2026-11-01', '2026-11-03', 2, 5600, '已退房'),\n  (2, 2, '301', '2026-11-01', '2026-11-04', 4, 7200, '已退房'),\n  (3, 3, 'V01', '2026-11-05', '2026-11-08', 5, 15800, '已入住'),\n  (4, 4, '101', '2026-11-06', '2026-11-08', 2, 3800, '已入住'),\n  (5, 1, 'V02', '2026-11-20', '2026-11-23', 6, 14800, '已預訂'),\n  (6, 5, '202', '2026-11-14', '2026-11-16', 2, 5600, '已取消'),\n  (7, 6, '102', '2026-10-25', '2026-10-27', 1, 3600, '已退房'),\n  (8, 7, '302', '2026-12-20', '2026-12-28', 4, 7200, '已預訂'),\n  (9, 8, '201', '2026-12-24', '2026-12-26', 2, 6200, '已預訂'),\n  (10, 2, 'V01', '2026-12-23', '2026-12-25', 6, 17800, '已預訂'),\n  (11, 9, '103', '2026-12-25', '2026-12-27', 2, 3800, '已預訂'),\n  (12, 3, '202', '2026-12-24', '2026-12-26', 2, 6200, '已取消'),\n  (13, 10, '301', '2026-11-28', '2026-11-30', 3, 7200, '已預訂'),\n  (14, 5, '101', '2026-10-18', '2026-10-20', 2, 3800, '已退房'),\n  (15, 4, 'V02', '2026-10-10', '2026-10-12', 4, 15800, '已退房'),\n  (16, 1, '202', '2026-10-03', '2026-10-05', 2, 5600, '已退房'),\n  (17, 6, '303', '2026-12-26', '2026-12-28', 4, 7800, '已預訂');\n\nINSERT INTO facility VALUES\n  ('SPA', '海風 SPA 芳療', 'SPA', 2800),\n  ('DIV', '浮潛體驗', '戶外', 1500),\n  ('SUP', '立槳 SUP', '戶外', 1800),\n  ('BBQ', '海灘燒烤晚餐', '餐飲', 1200),\n  ('YOG', '晨間瑜珈', '課程', 0),\n  ('KID', '兒童探險營', '課程', 900);\n\nINSERT INTO facility_order VALUES\n  (1, 1, 'SPA', '2026-11-02', 2),\n  (2, 1, 'BBQ', '2026-11-02', 2),\n  (3, 2, 'KID', '2026-11-02', 2),\n  (4, 2, 'BBQ', '2026-11-03', 4),\n  (5, 2, 'DIV', '2026-11-03', 2),\n  (6, 3, 'SPA', '2026-11-06', 1),\n  (7, 3, 'SUP', '2026-11-06', 3),\n  (8, 3, 'BBQ', '2026-11-06', 5),\n  (9, 4, 'YOG', '2026-11-07', 2),\n  (10, 7, 'DIV', '2026-10-26', 1),\n  (11, 14, 'SPA', '2026-10-19', 1),\n  (12, 15, 'BBQ', '2026-10-11', 4),\n  (13, 15, 'KID', '2026-10-11', 2),\n  (14, 16, 'SPA', '2026-10-04', 2),\n  (15, 16, 'YOG', '2026-10-04', 2),\n  (16, 3, 'DIV', '2026-11-07', 2),\n  (17, 4, 'BBQ', '2026-11-07', 2),\n  (18, 2, 'SPA', '2026-11-03', 1);\n\n","tables":[{"name":"room_type","zh":"房型","desc":"渡假村提供的房型與官方定價。","cols":[["type_id","TEXT","PK","房型代碼，如 STD、VIL"],["type_name","TEXT","","房型名稱"],["capacity","INTEGER","","最多可住人數（> 0）"],["base_price","INTEGER","","官方每晚定價（新台幣）"]],"rows":[["STD","標準雙人房",2,3800],["DLX","豪華海景房",2,5600],["FAM","家庭四人房",4,7200],["VIL","私人泳池別墅",6,15800]]},{"name":"room","zh":"客房","desc":"每一間實體客房，一間房屬於一種房型。","cols":[["room_no","TEXT","PK","房號；V 開頭為別墅"],["type_id","TEXT","FK","→ room_type.type_id"],["floor","INTEGER","","樓層"],["view","TEXT","","景觀：海景／山景／花園"],["status","TEXT","","可使用／維修中"]],"rows":[["101","STD",1,"花園","可使用"],["102","STD",1,"花園","可使用"],["103","STD",1,"山景","可使用"],["201","DLX",2,"海景","可使用"],["202","DLX",2,"海景","可使用"],["203","DLX",2,"山景","維修中"],["301","FAM",3,"海景","可使用"],["302","FAM",3,"山景","可使用"],["303","FAM",3,"花園","可使用"],["V01","VIL",1,"海景","可使用"],["V02","VIL",1,"海景","可使用"],["V03","VIL",1,"花園","可使用"]]},{"name":"guest","zh":"旅客","desc":"曾註冊或訂房的旅客。","cols":[["guest_id","INTEGER","PK","旅客編號"],["name","TEXT","","姓名"],["phone","TEXT","UQ","手機（唯一，不可重複）"],["city","TEXT","","居住城市"],["member_level","TEXT","","一般／金卡／VIP；NULL 表示非會員"]],"rows":[[1,"林雅婷","0912-000-101","台北","VIP"],[2,"陳冠宇","0912-000-102","台中","金卡"],[3,"王怡君","0912-000-103","高雄","金卡"],[4,"張家豪","0912-000-104","新竹","一般"],[5,"李佳穎","0912-000-105","台北",null],[6,"黃俊傑","0912-000-106","台南","一般"],[7,"吳淑芬","0912-000-107","桃園",null],[8,"劉子晴","0912-000-108","台北","VIP"],[9,"蔡明哲","0912-000-109","香港",null],[10,"鄭雨萱","0912-000-110","台中","一般"],[11,"謝承恩","0912-000-111","新竹","一般"]]},{"name":"booking","zh":"訂房","desc":"一筆訂單 = 一位旅客在一段日期入住一間房。","cols":[["booking_id","INTEGER","PK","訂單編號"],["guest_id","INTEGER","FK","→ guest.guest_id"],["room_no","TEXT","FK","→ room.room_no"],["check_in","TEXT","","入住日 YYYY-MM-DD"],["check_out","TEXT","","退房日（須晚於入住日）"],["adults","INTEGER","","入住人數"],["price_per_night","INTEGER","","成交價：訂房當下的每晚房價"],["status","TEXT","","已預訂／已入住／已退房／已取消"]],"rows":[[1,1,"201","2026-11-01","2026-11-03",2,5600,"已退房"],[2,2,"301","2026-11-01","2026-11-04",4,7200,"已退房"],[3,3,"V01","2026-11-05","2026-11-08",5,15800,"已入住"],[4,4,"101","2026-11-06","2026-11-08",2,3800,"已入住"],[5,1,"V02","2026-11-20","2026-11-23",6,14800,"已預訂"],[6,5,"202","2026-11-14","2026-11-16",2,5600,"已取消"],[7,6,"102","2026-10-25","2026-10-27",1,3600,"已退房"],[8,7,"302","2026-12-20","2026-12-28",4,7200,"已預訂"],[9,8,"201","2026-12-24","2026-12-26",2,6200,"已預訂"],[10,2,"V01","2026-12-23","2026-12-25",6,17800,"已預訂"],[11,9,"103","2026-12-25","2026-12-27",2,3800,"已預訂"],[12,3,"202","2026-12-24","2026-12-26",2,6200,"已取消"],[13,10,"301","2026-11-28","2026-11-30",3,7200,"已預訂"],[14,5,"101","2026-10-18","2026-10-20",2,3800,"已退房"],[15,4,"V02","2026-10-10","2026-10-12",4,15800,"已退房"],[16,1,"202","2026-10-03","2026-10-05",2,5600,"已退房"],[17,6,"303","2026-12-26","2026-12-28",4,7800,"已預訂"]]},{"name":"facility","zh":"設施","desc":"可付費（或免費）預約的設施與活動。","cols":[["facility_id","TEXT","PK","設施代碼"],["facility_name","TEXT","","設施名稱"],["category","TEXT","","類別：SPA／戶外／餐飲／課程"],["unit_price","INTEGER","","每人次單價（0 = 免費）"]],"rows":[["SPA","海風 SPA 芳療","SPA",2800],["DIV","浮潛體驗","戶外",1500],["SUP","立槳 SUP","戶外",1800],["BBQ","海灘燒烤晚餐","餐飲",1200],["YOG","晨間瑜珈","課程",0],["KID","兒童探險營","課程",900]]},{"name":"facility_order","zh":"設施使用","desc":"住客在住宿期間預約設施的紀錄，掛在訂單底下。","cols":[["order_id","INTEGER","PK","紀錄編號"],["booking_id","INTEGER","FK","→ booking.booking_id"],["facility_id","TEXT","FK","→ facility.facility_id"],["use_date","TEXT","","使用日期"],["quantity","INTEGER","","人次（> 0）"]],"rows":[[1,1,"SPA","2026-11-02",2],[2,1,"BBQ","2026-11-02",2],[3,2,"KID","2026-11-02",2],[4,2,"BBQ","2026-11-03",4],[5,2,"DIV","2026-11-03",2],[6,3,"SPA","2026-11-06",1],[7,3,"SUP","2026-11-06",3],[8,3,"BBQ","2026-11-06",5],[9,4,"YOG","2026-11-07",2],[10,7,"DIV","2026-10-26",1],[11,14,"SPA","2026-10-19",1],[12,15,"BBQ","2026-10-11",4],[13,15,"KID","2026-10-11",2],[14,16,"SPA","2026-10-04",2],[15,16,"YOG","2026-10-04",2],[16,3,"DIV","2026-11-07",2],[17,4,"BBQ","2026-11-07",2],[18,2,"SPA","2026-11-03",1]]}],"relations":[["room","type_id","room_type","type_id","一種房型有多間客房"],["booking","guest_id","guest","guest_id","一位旅客可有多筆訂單"],["booking","room_no","room","room_no","一間客房可被訂多次"],["facility_order","booking_id","booking","booking_id","一筆訂單可加購多項設施"],["facility_order","facility_id","facility","facility_id","一項設施可被多次使用"]],"queries":[{"id":"q1","topic":"SELECT · JOIN · ORDER BY","title":"海景房有哪些？","who":"櫃檯","question":"旅客指定要「海景」，列出所有海景房的房號、房型與每晚定價，價格由高到低。","sql":"SELECT r.room_no   AS 房號,\n       t.type_name AS 房型,\n       t.base_price AS 每晚定價\nFROM room AS r\nJOIN room_type AS t ON r.type_id = t.type_id\nWHERE r.view = '海景'\nORDER BY t.base_price DESC, r.room_no;","explain":"room 只存 type_id，房型名稱與價格在 room_type，所以要用 JOIN 以 type_id 接起來；WHERE 篩出海景，ORDER BY 先依價格遞減，同價再依房號。","try":"把 '海景' 改成 '花園'，或把 DESC 拿掉看排序怎麼變。","expected":{"columns":["房號","房型","每晚定價"],"values":[["V01","私人泳池別墅",15800],["V02","私人泳池別墅",15800],["301","家庭四人房",7200],["201","豪華海景房",5600],["202","豪華海景房",5600]]}},{"id":"q2","topic":"日期函數 · 計算欄位","title":"每筆訂單住幾晚、房費多少？","who":"財務","question":"列出所有「未取消」訂單的住宿晚數與房費總額（晚數 × 成交價）。","sql":"SELECT booking_id AS 訂單,\n       room_no    AS 房號,\n       check_in   AS 入住,\n       check_out  AS 退房,\n       CAST(julianday(check_out) - julianday(check_in) AS INTEGER) AS 晚數,\n       price_per_night * (julianday(check_out) - julianday(check_in)) AS 房費\nFROM booking\nWHERE status \u003c> '已取消'\nORDER BY check_in;","explain":"SQLite 沒有 DATE 型別，日期以 YYYY-MM-DD 文字儲存；julianday() 把日期轉成天數，相減就是晚數。房費用成交價 price_per_night 而不是房型定價，因為各訂單可能有折扣或假日價。","try":"把 WHERE 整行刪掉，取消的訂單 #6、#12 會出現。","expected":{"columns":["訂單","房號","入住","退房","晚數","房費"],"values":[[16,"202","2026-10-03","2026-10-05",2,11200],[15,"V02","2026-10-10","2026-10-12",2,31600],[14,"101","2026-10-18","2026-10-20",2,7600],[7,"102","2026-10-25","2026-10-27",2,7200],[1,"201","2026-11-01","2026-11-03",2,11200],[2,"301","2026-11-01","2026-11-04",3,21600],[3,"V01","2026-11-05","2026-11-08",3,47400],[4,"101","2026-11-06","2026-11-08",2,7600],[5,"V02","2026-11-20","2026-11-23",3,44400],[13,"301","2026-11-28","2026-11-30",2,14400],[8,"302","2026-12-20","2026-12-28",8,57600],[10,"V01","2026-12-23","2026-12-25",2,35600],[9,"201","2026-12-24","2026-12-26",2,12400],[11,"103","2026-12-25","2026-12-27",2,7600],[17,"303","2026-12-26","2026-12-28",2,15600]]}},{"id":"q3","topic":"GROUP BY · 聚合函數","title":"哪種房型最賺錢？","who":"經理","question":"統計各房型的有效訂單數、總晚數與房費營收（不含取消），依營收由高到低。","sql":"SELECT t.type_name AS 房型,\n       COUNT(*) AS 訂單數,\n       SUM(julianday(b.check_out) - julianday(b.check_in)) AS 總晚數,\n       SUM(b.price_per_night * (julianday(b.check_out) - julianday(b.check_in))) AS 營收\nFROM booking AS b\nJOIN room      AS r ON b.room_no = r.room_no\nJOIN room_type AS t ON r.type_id = t.type_id\nWHERE b.status \u003c> '已取消'\nGROUP BY t.type_id\nORDER BY 營收 DESC;","explain":"booking → room → room_type 兩次 JOIN 才拿得到房型。WHERE 先排除取消的訂單，GROUP BY 再把同房型的訂單收成一列，COUNT / SUM 對每組計算。","try":"把 GROUP BY t.type_id 改成 GROUP BY r.room_no，改成以房間為單位統計。","expected":{"columns":["房型","訂單數","總晚數","營收"],"values":[["私人泳池別墅",4,10,159000],["家庭四人房",4,15,109200],["豪華海景房",3,6,34800],["標準雙人房",4,8,30000]]}},{"id":"q4","topic":"LEFT JOIN · COUNT(欄位)","title":"哪些房間乏人問津？","who":"經理","question":"列出每間房被預訂的次數（不含取消），「從未被訂過的房間也要出現」，次數為 0。","sql":"SELECT r.room_no AS 房號,\n       r.status  AS 狀態,\n       COUNT(b.booking_id) AS 被訂次數\nFROM room AS r\nLEFT JOIN booking AS b\n       ON b.room_no = r.room_no\n      AND b.status \u003c> '已取消'\nGROUP BY r.room_no\nORDER BY 被訂次數, r.room_no;","explain":"LEFT JOIN 保留左表 room 的每一列，沒有對應訂單的房間，b 的欄位全是 NULL。COUNT(b.booking_id) 不計 NULL，所以這些房間是 0。注意排除取消的條件放在 ON 裡，若放在 WHERE 會把 NULL 列也濾掉。","try":"把 COUNT(b.booking_id) 改成 COUNT(*)，或把 LEFT JOIN 改成 JOIN（見「結果比較」1）。","expected":{"columns":["房號","狀態","被訂次數"],"values":[["203","維修中",0],["V03","可使用",0],["102","可使用",1],["103","可使用",1],["202","可使用",1],["302","可使用",1],["303","可使用",1],["101","可使用",2],["201","可使用",2],["301","可使用",2],["V01","可使用",2],["V02","可使用",2]]}},{"id":"q5","topic":"GROUP BY · HAVING","title":"設施消費大戶","who":"行銷","question":"計算每位旅客的設施消費總額（單價 × 人次），只列出超過 3,000 元的旅客。","sql":"SELECT g.name AS 旅客,\n       g.member_level AS 會員等級,\n       SUM(f.unit_price * fo.quantity) AS 設施消費\nFROM guest AS g\nJOIN booking        AS b  ON b.guest_id = g.guest_id\nJOIN facility_order AS fo ON fo.booking_id = b.booking_id\nJOIN facility       AS f  ON f.facility_id = fo.facility_id\nGROUP BY g.guest_id\nHAVING SUM(f.unit_price * fo.quantity) > 3000\nORDER BY 設施消費 DESC;","explain":"設施使用掛在訂單下，要從 guest 一路 JOIN 到 facility 才知道誰花了多少。「超過 3000」是針對加總後的值，所以要寫在 HAVING（分組後篩選），不能寫在 WHERE（分組前篩選）。","try":"把 3000 改成 10000；或把 HAVING 改成 WHERE 看錯誤訊息（見「結果比較」5）。","expected":{"columns":["旅客","會員等級","設施消費"],"values":[["王怡君","金卡",17200],["林雅婷","VIP",13600],["陳冠宇","金卡",12400],["張家豪","一般",9000]]}},{"id":"q6","topic":"子查詢（純量）","title":"高於平均的訂單","who":"財務","question":"找出房費總額高於「所有有效訂單平均房費」的訂單。","sql":"SELECT b.booking_id AS 訂單,\n       g.name AS 旅客,\n       b.room_no AS 房號,\n       b.price_per_night * (julianday(b.check_out) - julianday(b.check_in)) AS 房費\nFROM booking AS b\nJOIN guest AS g ON g.guest_id = b.guest_id\nWHERE b.status \u003c> '已取消'\n  AND b.price_per_night * (julianday(b.check_out) - julianday(b.check_in)) >\n      (SELECT AVG(price_per_night * (julianday(check_out) - julianday(check_in)))\n       FROM booking\n       WHERE status \u003c> '已取消')\nORDER BY 房費 DESC;","explain":"括號內的子查詢先算出一個值（平均房費），外層查詢再拿每筆訂單和它比較。平均值本身也要排除取消的訂單，標準才一致。","try":"把 > 改成 \u003c，找出低於平均的訂單。","expected":{"columns":["訂單","旅客","房號","房費"],"values":[[8,"吳淑芬","302",57600],[3,"王怡君","V01",47400],[5,"林雅婷","V02",44400],[10,"陳冠宇","V01",35600],[15,"張家豪","V02",31600]]}},{"id":"q7","topic":"NOT EXISTS · 日期區間重疊","title":"聖誕節還有空房嗎？","who":"櫃檯","question":"旅客想 2026-12-24 入住、12-26 退房。列出這段期間可以訂的房間（未維修、沒有與此區間重疊的有效訂單）。","sql":"SELECT r.room_no AS 房號, t.type_name AS 房型, r.view AS 景觀, t.base_price AS 定價\nFROM room AS r\nJOIN room_type AS t ON t.type_id = r.type_id\nWHERE r.status = '可使用'\n  AND NOT EXISTS (\n        SELECT 1\n        FROM booking AS b\n        WHERE b.room_no = r.room_no\n          AND b.status \u003c> '已取消'\n          AND b.check_in  \u003c '2026-12-26'   -- 對方入住早於我退房\n          AND b.check_out > '2026-12-24'   -- 對方退房晚於我入住\n      )\nORDER BY t.base_price, r.room_no;","explain":"兩段住宿 [A入, A退) 與 [B入, B退) 重疊的條件是 A入 \u003c B退 且 A退 > B入。NOT EXISTS 對每間房檢查「是否存在一筆重疊的有效訂單」，不存在才是空房。退房日當天可以讓下一位入住，所以用 \u003c 與 > 而不是 \u003c= >=。","try":"把日期換成 '2026-11-06' 到 '2026-11-08'，看看哪些房間正住著人。","expected":{"columns":["房號","房型","景觀","定價"],"values":[["101","標準雙人房","花園",3800],["102","標準雙人房","花園",3800],["202","豪華海景房","海景",5600],["301","家庭四人房","海景",7200],["303","家庭四人房","花園",7200],["V02","私人泳池別墅","海景",15800],["V03","私人泳池別墅","花園",15800]]}},{"id":"q8","topic":"CASE · COALESCE · NULL","title":"各會員等級的貢獻","who":"行銷","question":"依會員等級（NULL 顯示為「非會員」）統計旅客人數、有效訂單數與總住宿晚數。","sql":"SELECT COALESCE(g.member_level, '非會員') AS 等級,\n       COUNT(DISTINCT g.guest_id) AS 旅客數,\n       COUNT(b.booking_id) AS 訂單數,\n       COALESCE(SUM(julianday(b.check_out) - julianday(b.check_in)), 0) AS 總晚數\nFROM guest AS g\nLEFT JOIN booking AS b\n       ON b.guest_id = g.guest_id AND b.status \u003c> '已取消'\nGROUP BY 等級\nORDER BY CASE 等級 WHEN 'VIP' THEN 1 WHEN '金卡' THEN 2\n                   WHEN '一般' THEN 3 ELSE 4 END;","explain":"COALESCE 把 NULL 換成「非會員」；一位旅客可能有多筆訂單，所以旅客數用 COUNT(DISTINCT)。ORDER BY 裡的 CASE 自訂排序，否則文字會依字碼排。","try":"把 COALESCE(g.member_level, '非會員') 換成 g.member_level，NULL 組會變成空白。","expected":{"columns":["等級","旅客數","訂單數","總晚數"],"values":[["VIP",2,4,9],["金卡",2,3,8],["一般",4,5,10],["非會員",3,3,12]]}},{"id":"q9","topic":"視窗函數 · RANK()","title":"各類別最熱門的設施","who":"營運","question":"計算每項設施的總人次與收入，並在「同一類別內」依人次排名。","sql":"SELECT f.category AS 類別,\n       f.facility_name AS 設施,\n       SUM(fo.quantity) AS 總人次,\n       SUM(fo.quantity * f.unit_price) AS 收入,\n       RANK() OVER (PARTITION BY f.category\n                    ORDER BY SUM(fo.quantity) DESC) AS 類別內排名\nFROM facility AS f\nJOIN facility_order AS fo ON fo.facility_id = f.facility_id\nGROUP BY f.facility_id\nORDER BY 類別, 類別內排名;","explain":"先 GROUP BY 算出每項設施的總人次，RANK() OVER (PARTITION BY 類別) 再在每個類別內各自排名；和 GROUP BY 不同，視窗函數不會把列合併。課程類的兩項都是 4 人次，RANK() 給同分同名次（都是 1）。","try":"把 RANK() 改成 ROW_NUMBER()，同分的兩項課程就會分出 1、2 名。","expected":{"columns":["類別","設施","總人次","收入","類別內排名"],"values":[["SPA","海風 SPA 芳療",7,19600,1],["戶外","浮潛體驗",5,7500,1],["戶外","立槳 SUP",3,5400,2],["課程","兒童探險營",4,3600,1],["課程","晨間瑜珈",4,0,1],["餐飲","海灘燒烤晚餐",17,20400,1]]}}],"compares":[{"id":"c1","ref":"q4","title":"INNER JOIN vs LEFT JOIN，COUNT(*) vs COUNT(欄位)","question":"每間房被預訂幾次？（從未被訂的也要列出）","variants":[{"label":"A · INNER JOIN","sql":"SELECT r.room_no, COUNT(*) AS times\nFROM room AS r\nJOIN booking AS b ON b.room_no = r.room_no AND b.status \u003c> '已取消'\nGROUP BY r.room_no\nORDER BY times, r.room_no;"},{"label":"B · LEFT JOIN + COUNT(*)","sql":"SELECT r.room_no, COUNT(*) AS times\nFROM room AS r\nLEFT JOIN booking AS b ON b.room_no = r.room_no AND b.status \u003c> '已取消'\nGROUP BY r.room_no\nORDER BY times, r.room_no;"},{"label":"C · LEFT JOIN + COUNT(b.booking_id)","sql":"SELECT r.room_no, COUNT(b.booking_id) AS times\nFROM room AS r\nLEFT JOIN booking AS b ON b.room_no = r.room_no AND b.status \u003c> '已取消'\nGROUP BY r.room_no\nORDER BY times, r.room_no;"}],"explain":"A 用 INNER JOIN，只留下「有配對到訂單」的房間，所以從未被訂的 203、V03 直接消失（10 列）。\nB 改成 LEFT JOIN，12 間房都回來了（12 列），但沒訂單的房間顯示 1 次──因為 LEFT JOIN 仍會為它產生一列（訂單欄位是 NULL），COUNT(*) 數的是「列」。\nC 改數 COUNT(b.booking_id)，COUNT(欄位) 會略過 NULL，那些房間才正確變成 0。"},{"id":"c2","ref":"q7","title":"日期條件寫錯：BETWEEN 入住日 vs 區間重疊","question":"12/24 入住、12/26 退房，哪些房間是空的？","variants":[{"label":"A · 只看入住日是否落在區間","sql":"SELECT r.room_no\nFROM room AS r\nWHERE r.status = '可使用'\n  AND r.room_no NOT IN (\n        SELECT room_no FROM booking\n        WHERE status \u003c> '已取消'\n          AND check_in BETWEEN '2026-12-24' AND '2026-12-26')\nORDER BY r.room_no;"},{"label":"B · 正確的區間重疊條件","sql":"SELECT r.room_no\nFROM room AS r\nWHERE r.status = '可使用'\n  AND r.room_no NOT IN (\n        SELECT room_no FROM booking\n        WHERE status \u003c> '已取消'\n          AND check_in  \u003c '2026-12-26'\n          AND check_out > '2026-12-24')\nORDER BY r.room_no;"}],"explain":"A 多出 302、V01：302 是 12/20 入住、12/28 退房，V01 是 12/23 入住、12/25 退房，入住日都不在 12/24–12/26 之間，但人其實還住在房裡──照 A 賣出去就會重複訂房（overbooking）。\nA 也少了 303：303 的訂單是 12/26 入住，BETWEEN 包含端點，被當成衝突；但我們 12/26 早上就退房，根本不衝突。\nB 用「對方入住 \u003c 我退房 且 對方退房 > 我入住」判斷重疊，兩種錯誤都消失。"},{"id":"c3","ref":"q3","title":"忘記排除「已取消」訂單","question":"各房型營收是多少？","variants":[{"label":"A · 沒有 WHERE","sql":"SELECT t.type_name,\n       COUNT(*) AS bookings,\n       SUM(b.price_per_night * (julianday(b.check_out) - julianday(b.check_in))) AS revenue\nFROM booking AS b\nJOIN room AS r ON b.room_no = r.room_no\nJOIN room_type AS t ON r.type_id = t.type_id\nGROUP BY t.type_id\nORDER BY revenue DESC;"},{"label":"B · WHERE status \u003c> '已取消'","sql":"SELECT t.type_name,\n       COUNT(*) AS bookings,\n       SUM(b.price_per_night * (julianday(b.check_out) - julianday(b.check_in))) AS revenue\nFROM booking AS b\nJOIN room AS r ON b.room_no = r.room_no\nJOIN room_type AS t ON r.type_id = t.type_id\nWHERE b.status \u003c> '已取消'\nGROUP BY t.type_id\nORDER BY revenue DESC;"}],"explain":"資料中有 2 筆取消的訂單（#6、#12），都是豪華海景房。A 把它們也算進去，豪華海景房的訂單數從 3 變 5、營收多算了 23,600 元（34,800 → 58,400）。\nSQL 只會照你寫的條件算：資料表裡有 status 欄位，不代表查詢會自動排除取消單，商業規則必須寫進 WHERE。"},{"id":"c4","ref":"q8","title":"NULL 不等於任何值：\u003c> 漏掉非會員","question":"列出所有「不是 VIP」的旅客","variants":[{"label":"A · member_level \u003c> 'VIP'","sql":"SELECT guest_id, name, member_level\nFROM guest\nWHERE member_level \u003c> 'VIP'\nORDER BY guest_id;"},{"label":"B · 加上 IS NULL","sql":"SELECT guest_id, name, member_level\nFROM guest\nWHERE member_level \u003c> 'VIP' OR member_level IS NULL\nORDER BY guest_id;"}],"explain":"共有 11 位旅客、2 位 VIP，「不是 VIP」應該有 9 位，但 A 只回傳 6 位。\n少掉的 李佳穎、吳淑芬、蔡明哲 是非會員，member_level 為 NULL。在 SQL 中 NULL \u003c> 'VIP' 的結果不是 TRUE，而是 UNKNOWN，WHERE 只保留 TRUE 的列，所以它們被濾掉。B 明確加上 IS NULL 後才正確（9 位）。"},{"id":"c5","ref":"q5","title":"聚合條件放在 WHERE → 錯誤訊息","question":"設施消費超過 3,000 元的旅客","variants":[{"label":"A · 寫在 WHERE","sql":"SELECT g.name, SUM(f.unit_price * fo.quantity) AS spend\nFROM guest AS g\nJOIN booking AS b ON b.guest_id = g.guest_id\nJOIN facility_order AS fo ON fo.booking_id = b.booking_id\nJOIN facility AS f ON f.facility_id = fo.facility_id\nWHERE SUM(f.unit_price * fo.quantity) > 3000\nGROUP BY g.guest_id;"},{"label":"B · 改成 HAVING","sql":"SELECT g.name, SUM(f.unit_price * fo.quantity) AS spend\nFROM guest AS g\nJOIN booking AS b ON b.guest_id = g.guest_id\nJOIN facility_order AS fo ON fo.booking_id = b.booking_id\nJOIN facility AS f ON f.facility_id = fo.facility_id\nGROUP BY g.guest_id\nHAVING SUM(f.unit_price * fo.quantity) > 3000\nORDER BY spend DESC;"}],"explain":"A 無法執行，SQLite 回傳「misuse of aggregate: SUM()」。執行順序是 FROM → WHERE → GROUP BY → HAVING → SELECT：WHERE 篩選的時候還沒分組，SUM 根本還沒算出來。\nB 把條件移到 HAVING，分組後再篩選：有設施消費的 6 位旅客中，4 位超過 3,000 元。"}],"totalRows":68};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const TABLE_NAMES = DATA.tables.map(t => t.name);
+
+/* ---------- SQL 語法上色 ---------- */
+const KW = new Set('SELECT FROM WHERE AND OR NOT IN IS NULL AS JOIN LEFT RIGHT INNER OUTER FULL CROSS ON GROUP BY ORDER HAVING LIMIT OFFSET DISTINCT CASE WHEN THEN ELSE END ASC DESC EXISTS BETWEEN LIKE UNION ALL INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE PRIMARY KEY REFERENCES CHECK DEFAULT UNIQUE INTEGER TEXT REAL OVER PARTITION WITH PRAGMA DROP ALTER ADD VIEW INDEX'.split(' '));
+const FN = new Set('COUNT SUM AVG MIN MAX COALESCE IFNULL JULIANDAY DATE STRFTIME CAST ROUND RANK ROW_NUMBER DENSE_RANK LENGTH UPPER LOWER SUBSTR NULLIF'.split(' '));
+function highlight(sql){
+  return sql.replace(/(--[^\n]*)|('(?:[^']|'')*'?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)|([^\-'A-Za-z0-9_]+|-)/g,(m,cm,str,num,word,other)=>{
+    if(cm) return `<span class="tk-cm">${esc(cm)}</span>`;
+    if(str) return `<span class="tk-str">${esc(str)}</span>`;
+    if(num) return `<span class="tk-num">${num}</span>`;
+    if(word){const u=word.toUpperCase(); if(KW.has(u)) return `<span class="tk-kw">${word}</span>`; if(FN.has(u)) return `<span class="tk-fn">${word}</span>`; return esc(word);}
+    return esc(other);
+  });
+}
+
+/* ---------- 編輯器 ---------- */
+function makeEditor(host, initial, onRun){
+  host.innerHTML = '<pre aria-hidden="true"><code></code></pre><textarea spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="SQL 編輯器"></textarea>';
+  const ta = host.querySelector('textarea'), code = host.querySelector('code'), pre = host.querySelector('pre');
+  const paint = () => { code.innerHTML = highlight(ta.value) + '\n'; ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+  ta.addEventListener('input', paint);
+  ta.addEventListener('scroll', () => { pre.scrollLeft = ta.scrollLeft; });
+  ta.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); onRun(); }
+    else if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); document.execCommand('insertText', false, '  '); }
+  });
+  const api = { get value(){ return ta.value; }, set value(v){ ta.value = v; paint(); pre.scrollLeft = 0; ta.scrollLeft = 0; } };
+  api.value = initial;
+  new ResizeObserver(paint).observe(host);
+  return api;
+}
+
+/* ---------- 結果表 ---------- */
+function renderTable(cols, rows, extraKeys){
+  if (!cols.length) return '<div class="empty">查詢成功，但沒有回傳任何欄位。</div>';
+  if (!rows.length) return `<div class="tbl-scroll"><table class="t"><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead></table></div><div class="empty" style="margin-top:8px">0 列：沒有符合條件的資料。</div>`;
+  const body = rows.map(r => {
+    const cls = extraKeys && extraKeys.has(JSON.stringify(r)) ? ' class="extra"' : '';
+    return `<tr${cls}>` + r.map(v => v === null ? '<td><span class="null">NULL</span></td>' : typeof v === 'number' ? `<td class="n">${Number.isInteger(v) ? v : +v.toFixed(4)}</td>` : `<td>${esc(v)}</td>`).join('') + '</tr>';
+  }).join('');
+  return `<div class="tbl-scroll"><table class="t"><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
+/* ---------- SQLite ---------- */
+let SQL = null;
+function runSQL(sql){
+  const db = new SQL.Database();
+  db.exec(DATA.seed);
+  const t0 = performance.now();
+  try {
+    const sets = db.exec(sql);
+    return { sets, ms: performance.now() - t0, modified: db.getRowsModified() };
+  } catch (e) { return { error: e.message }; }
+  finally { db.close(); }
+}
+function translateError(msg){
+  const tips = [
+    [/no such table: (\S+)/, m => `找不到資料表 ${m[1]}，請確認表名拼字（可用的表：${TABLE_NAMES.join('、')}）。`],
+    [/no such column: (\S+)/, m => `找不到欄位 ${m[1]}，請確認欄位名稱，或是否忘了 JOIN 那張表／別名寫錯。`],
+    [/misuse of aggregate/, () => '聚合函數（SUM、COUNT…）不能出現在 WHERE，分組後的條件請改用 HAVING。'],
+    [/ambiguous column name: (\S+)/, m => `欄位 ${m[1]} 同時存在於多張表，請加上表名或別名，例如 b.${m[1]}。`],
+    [/syntax error/, () => '語法錯誤：檢查附近是否少了逗號、括號、引號，或關鍵字拼錯。'],
+    [/incomplete input/, () => 'SQL 不完整：可能少了右括號或結尾的引號。'],
+    [/FOREIGN KEY constraint failed/, () => '違反外來鍵：參照的資料不存在（例如不存在的 guest_id）。'],
+    [/UNIQUE constraint failed|PRIMARY KEY/, () => '違反唯一／主鍵限制：這個值已經存在。'],
+    [/CHECK constraint failed/, () => '違反 CHECK 限制：值不符合欄位規則（例如退房日早於入住日）。'],
+    [/NOT NULL constraint failed/, () => '這個欄位不可為 NULL。'],
+  ];
+  for (const [re, f] of tips) { const m = msg.match(re); if (m) return f(m); }
+  return '';
+}
+function renderRun(res, extraKeys){
+  if (res.error) {
+    const zh = translateError(res.error);
+    return `<div class="errbox"><b>錯誤：</b>${esc(res.error)}${zh ? `\n<b>可能原因：</b>${esc(zh)}` : ''}</div>`;
+  }
+  if (!res.sets.length) return `<div class="okbox">執行成功，沒有回傳結果集${res.modified ? `（影響 ${res.modified} 列）` : ''}。下次執行會重建資料庫。</div>`;
+  if (res.sets.length === 1) return renderTable(res.sets[0].columns, res.sets[0].values, extraKeys);
+  return res.sets.map((s, i) => `<div class="multi">結果集 ${i + 1} / ${res.sets.length}</div>` + renderTable(s.columns, s.values)).join('');
+}
+const lastSet = res => res.sets && res.sets.length ? res.sets[res.sets.length - 1] : null;
+const tablesUsed = sql => TABLE_NAMES.filter(t => new RegExp(`\\b${t}\\b`, 'i').test(sql.replace(/'(?:[^']|'')*'/g, '')));
+
+/* ---------- 1 案例背景 ---------- */
+$('#stats').innerHTML = [
+  [DATA.tables.length, '張資料表'], [DATA.totalRows, '筆樣本資料'], [DATA.queries.length, '個查詢'], [DATA.compares.length, '組結果比較'],
+].map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('');
+$('#painList').innerHTML = DATA.queries.map((q, i) =>
+  `<a class="card" href="#query" data-q="${i}"><span class="tag">Q${i + 1}</span><span><span class="q">${esc(q.title)}</span><br><span class="d">${esc(q.who)}：${esc(q.question)}</span></span></a>`).join('');
+document.querySelectorAll('#painList a').forEach(a => a.addEventListener('click', () => selectQuery(+a.dataset.q)));
+
+/* ---------- 2 資料庫設計 ---------- */
+$('#rels').innerHTML = DATA.relations.map(([ct, cc, pt, pc, l]) =>
+  `<div><code>${pt}.${pc}</code> 1 ── N <code>${ct}.${cc}</code><br><span class="hint">${esc(l)}</span></div>`).join('');
+const erd = document.querySelector('svg.erd');
+function focusERD(names){
+  if (!names || !names.length) { erd.classList.remove('focus'); erd.querySelectorAll('.on').forEach(e => e.classList.remove('on')); return; }
+  erd.classList.add('focus');
+  erd.querySelectorAll('.erd-table').forEach(g => g.classList.toggle('on', names.includes(g.dataset.table)));
+  erd.querySelectorAll('.erd-link').forEach(l => l.classList.toggle('on', names.includes(l.dataset.from) && names.includes(l.dataset.to)));
+}
+function showTable(i){
+  const t = DATA.tables[i];
+  document.querySelectorAll('#ttabs .tab').forEach((b, j) => b.setAttribute('aria-selected', i === j));
+  const neighbors = [t.name, ...DATA.relations.filter(r => r[0] === t.name || r[2] === t.name).flatMap(r => [r[0], r[2]])];
+  focusERD([...new Set(neighbors)]);
+  $('#tpanel').innerHTML = `
+    <p class="tdesc"><b style="color:var(--ink);font-family:var(--mono)">${t.name}</b>（${esc(t.zh)}）— ${esc(t.desc)}</p>
+    <div class="dual">
+      <div><h4 style="margin-top:0">欄位說明</h4><div class="tbl-scroll"><table class="t dict"><thead><tr><th>欄位</th><th>型別</th><th>說明</th></tr></thead><tbody>
+        ${t.cols.map(([c, ty, k, d]) => `<tr><td>${c}${k ? `<span class="k ${k}">${k}</span>` : ''}</td><td>${ty}</td><td>${esc(d)}</td></tr>`).join('')}
+      </tbody></table></div></div>
+      <div><h4 style="margin-top:0">樣本資料（全部 ${t.rows.length} 筆）</h4>${renderTable(t.cols.map(c => c[0]), t.rows)}</div>
+    </div>`;
+}
+$('#ttabs').innerHTML = DATA.tables.map((t, i) => `<button class="tab" role="tab" data-i="${i}">${t.name}<small>${t.rows.length}</small></button>`).join('');
+document.querySelectorAll('#ttabs .tab').forEach(b => b.addEventListener('click', () => showTable(+b.dataset.i)));
+erd.querySelectorAll('.erd-table').forEach(g => { g.style.cursor = 'pointer'; g.addEventListener('click', () => showTable(TABLE_NAMES.indexOf(g.dataset.table))); });
+showTable(3);
+$('#ddl').innerHTML = highlight(DATA.seed);
+
+/* ---------- 3 查詢操作 ---------- */
+let cur = 0;
+const qEd = makeEditor($('#qEditor'), '', () => runQuery());
+$('#qlist').innerHTML = DATA.queries.map((q, i) =>
+  `<button class="qbtn" role="listitem" data-i="${i}"><span class="no">Q${i + 1}</span><span><span class="tt">${esc(q.title)}</span><span class="tp">${esc(q.topic)}</span></span></button>`).join('');
+document.querySelectorAll('.qbtn').forEach(b => b.addEventListener('click', () => selectQuery(+b.dataset.i)));
+function selectQuery(i){
+  cur = i; const q = DATA.queries[i];
+  document.querySelectorAll('.qbtn').forEach((b, j) => b.setAttribute('aria-current', i === j));
+  $('#qWho').textContent = q.who; $('#qTopic').textContent = q.topic;
+  $('#qTitle').textContent = `Q${i + 1}. ${q.title}`; $('#qQuestion').textContent = q.question;
+  $('#qExplain').textContent = q.explain;
+  $('#qTry').innerHTML = `<b>試著修改：</b>${esc(q.try)}`;
+  qEd.value = q.sql;
+  $('#qExpected').innerHTML = renderTable(q.expected.columns, q.expected.values);
+  $('#qExpMeta').textContent = `${q.expected.values.length} 列`;
+  $('#qActual').innerHTML = '<div class="empty">尚未執行。修改上方 SQL 後按「▶ 執行」。</div>';
+  $('#qBadge').innerHTML = '';
+  updateUses();
+}
+function updateUses(){
+  const used = tablesUsed(qEd.value);
+  $('#qUses').innerHTML = used.length ? '用到的資料表：' + used.map(t => `<code>${t}</code>`).join('') : '';
+}
+$('#qEditor').addEventListener('input', updateUses);
+function runQuery(){
+  if (!SQL) return;
+  const q = DATA.queries[cur], res = runSQL(qEd.value);
+  $('#qActual').innerHTML = renderRun(res);
+  const s = lastSet(res);
+  if (res.error) $('#qBadge').innerHTML = '<span class="badge err">執行錯誤</span>';
+  else if (!s) $('#qBadge').innerHTML = '<span class="badge diff">無結果集</span>';
+  else {
+    const same = JSON.stringify(s.columns) === JSON.stringify(q.expected.columns) && JSON.stringify(s.values) === JSON.stringify(q.expected.values);
+    $('#qBadge').innerHTML = `<span class="meta">${s.values.length} 列 · ${res.ms.toFixed(1)} ms</span> ` + (same ? '<span class="badge ok">✓ 與預期相同</span>' : '<span class="badge diff">與預期不同</span>');
+  }
+}
+$('#qRun').addEventListener('click', runQuery);
+$('#qReset').addEventListener('click', () => { qEd.value = DATA.queries[cur].sql; updateUses(); });
+selectQuery(0);
+
+/* ---------- 4 結果比較 ---------- */
+const cmpRunners = [];
+$('#cmpList').innerHTML = DATA.compares.map((c, ci) => {
+  const qi = DATA.queries.findIndex(q => q.id === c.ref);
+  return `<article class="card cmp" id="${c.id}">
+    <div class="cmp-head"><span class="no">比較 ${ci + 1}</span><h3>${esc(c.title)}</h3></div>
+    <p class="qq">問題：<b>${esc(c.question)}</b>　·　相關查詢 <a href="#query" data-q="${qi}">Q${qi + 1}</a></p>
+    <div class="variants">${c.variants.map((v, vi) => `
+      <div class="var" data-c="${ci}" data-v="${vi}">
+        <div class="var-top"><b>${esc(v.label)}</b>${vi === c.variants.length - 1 ? '<span class="vtag good">✓ 正確寫法</span>' : '<span class="vtag bad">✗ 有問題</span>'}</div>
+        <div class="editor"></div>
+        <div class="toolbar" style="margin:0"><button class="btn primary" data-run disabled>▶ 執行</button><button class="btn" data-reset>↺ 還原</button></div>
+        <div class="note"></div>
+        <div class="out"><div class="empty">等待 SQLite 載入…</div></div>
+      </div>`).join('')}
+    </div>
+    <div class="why"><h4>結果如何改變？為什麼？</h4>${c.explain.split('\n').map(p => `<p>${esc(p)}</p>`).join('')}</div>
+  </article>`;
+}).join('');
+document.querySelectorAll('#cmpList a[data-q]').forEach(a => a.addEventListener('click', () => selectQuery(+a.dataset.q)));
+DATA.compares.forEach((c, ci) => {
+  const editors = [], results = [];
+  const cards = [...document.querySelectorAll(`.var[data-c="${ci}"]`)];
+  const refresh = () => {
+    const ref = results[results.length - 1];
+    const refSet = ref && lastSet(ref);
+    const refKeys = new Set(refSet ? refSet.values.map(r => JSON.stringify(r)) : []);
+    cards.forEach((card, vi) => {
+      const res = results[vi]; if (!res) return;
+      const s = lastSet(res), isRef = vi === cards.length - 1;
+      let extra = null, note = '';
+      if (res.error) note = '<span class="lost">執行失敗</span>';
+      else if (s) {
+        note = `${s.values.length} 列`;
+        if (!isRef && refSet) {
+          const mine = new Set(s.values.map(r => JSON.stringify(r)));
+          extra = new Set([...mine].filter(k => !refKeys.has(k)));
+          const lost = [...refKeys].filter(k => !mine.has(k)).length;
+          note += extra.size || lost ? ` · 與正確版相比：<span class="lost">多 ${extra.size} 列、少 ${lost} 列</span>` : ' · 與正確版相同';
+        }
+      }
+      card.querySelector('.note').innerHTML = note;
+      card.querySelector('.out').innerHTML = renderRun(res, extra);
+    });
+  };
+  cards.forEach((card, vi) => {
+    const run = () => { if (!SQL) return; results[vi] = runSQL(editors[vi].value); refresh(); };
+    editors[vi] = makeEditor(card.querySelector('.editor'), c.variants[vi].sql, run);
+    card.querySelector('[data-run]').addEventListener('click', run);
+    card.querySelector('[data-reset]').addEventListener('click', () => { editors[vi].value = c.variants[vi].sql; run(); });
+    cmpRunners.push(run);
+  });
+});
+
+/* ---------- 啟動 ---------- */
+initSqlJs({ locateFile: f => 'lib/' + f }).then(S => {
+  SQL = S;
+  const st = $('#status'); st.classList.add('ok'); st.querySelector('span').textContent = '就緒';
+  document.querySelectorAll('button[disabled]').forEach(b => b.disabled = false);
+  cmpRunners.forEach(r => r());
+}).catch(e => {
+  const st = $('#status'); st.classList.add('err'); st.querySelector('span').textContent = '載入失敗';
+  document.querySelectorAll('.out .empty, #qActual .empty').forEach(el => el.textContent = 'SQLite 載入失敗：' + e.message + '（若直接雙擊開啟檔案，請改用 GitHub Pages 或本機伺服器開啟）');
+});
+</script>
+</body>
+</html>
