@@ -4,12 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node src/build.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "sql.js": "^1.15.2"
+    "sql.js": "1.13.0",
+    "@iconify-json/lucide": "1.2.100",
+    "simple-icons": "16.30.0"
   }
 }

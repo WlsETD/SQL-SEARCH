@@ -20,7 +20,7 @@ CREATE TABLE room (
 CREATE TABLE guest (
   guest_id      INTEGER PRIMARY KEY,
   name          TEXT NOT NULL,
-  phone         TEXT NOT NULL UNIQUE,
+  account       TEXT NOT NULL UNIQUE,
   city          TEXT,
   member_level  TEXT CHECK (member_level IN ('一般','金卡','VIP'))  -- NULL = 非會員
 );
@@ -75,17 +75,17 @@ export const ROWS = {
     ['V03', 'VIL', 1, '花園', '可使用'],
   ],
   guest: [
-    [1, '林雅婷', '0912-000-101', '台北', 'VIP'],
-    [2, '陳冠宇', '0912-000-102', '台中', '金卡'],
-    [3, '王怡君', '0912-000-103', '高雄', '金卡'],
-    [4, '張家豪', '0912-000-104', '新竹', '一般'],
-    [5, '李佳穎', '0912-000-105', '台北', null],
-    [6, '黃俊傑', '0912-000-106', '台南', '一般'],
-    [7, '吳淑芬', '0912-000-107', '桃園', null],
-    [8, '劉子晴', '0912-000-108', '台北', 'VIP'],
-    [9, '蔡明哲', '0912-000-109', '香港', null],
-    [10, '鄭雨萱', '0912-000-110', '台中', '一般'],
-    [11, '謝承恩', '0912-000-111', '新竹', '一般'],
+    [1, '林雅婷', 'yating_lin', '台北', 'VIP'],
+    [2, '陳冠宇', 'guanyu_chen', '台中', '金卡'],
+    [3, '王怡君', 'yijun_wang', '高雄', '金卡'],
+    [4, '張家豪', 'jiahao_chang', '新竹', '一般'],
+    [5, '李佳穎', 'jiaying_li', '台北', null],
+    [6, '黃俊傑', 'junjie_huang', '台南', '一般'],
+    [7, '吳淑芬', 'shufen_wu', '桃園', null],
+    [8, '劉子晴', 'ziqing_liu', '台北', 'VIP'],
+    [9, '蔡明哲', 'mingzhe_tsai', '香港', null],
+    [10, '鄭雨萱', 'yuxuan_cheng', '台中', '一般'],
+    [11, '謝承恩', 'chengen_hsieh', '新竹', '一般'],
   ],
   booking: [
     [1, 1, '201', '2026-11-01', '2026-11-03', 2, 5600, '已退房'],
@@ -162,7 +162,7 @@ export const TABLES = [
     cols: [
       ['guest_id', 'INTEGER', 'PK', '旅客編號'],
       ['name', 'TEXT', '', '姓名'],
-      ['phone', 'TEXT', 'UQ', '手機（唯一，不可重複）'],
+      ['account', 'TEXT', 'UQ', '會員帳號（唯一，不可重複）'],
       ['city', 'TEXT', '', '居住城市'],
       ['member_level', 'TEXT', '', '一般／金卡／VIP；NULL 表示非會員'],
     ],

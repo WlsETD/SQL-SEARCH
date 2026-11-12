@@ -1,551 +1,839 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="zh-Hant" data-type="software" data-radius="soft" data-ground="sky" data-buttons="tonal" data-motion>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>澄海渡假村 · SQL 查詢練習</title>
-<meta name="description" content="渡假村訂房與設施管理資料庫：ERD、欄位說明、樣本資料，以及可在瀏覽器直接修改並執行的 SQL 查詢。">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>澄海渡假村：訂房資料庫的 SQL 查詢練習台</title>
+<meta name="description" content="一間 12 間房的虛構海濱渡假村，6 張資料表與 67 筆樣本資料；在瀏覽器裡修改 9 個查詢並用 SQLite 直接執行。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="澄海渡假村：訂房資料庫的 SQL 查詢練習台">
+<meta property="og:description" content="改一行 SQL，按執行，看 SQLite 回傳的結果或錯誤訊息。">
+<meta property="og:image" content="share.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230b6896'/%3E%3Ccircle cx='8' cy='12' r='2' fill='%23f6f4ef'/%3E%3Ccircle cx='12' cy='12' r='2' fill='%2324a3ab'/%3E%3Ccircle cx='16' cy='12' r='2' fill='%238fc2bb'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#f6f4ef">
+<!-- <link rel="canonical" href="https://wlsetd.github.io/SQL-SEARCH/"> -->
+<meta name="site-kind" content="software">
+<meta name="page-type" content="software">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@400..700&family=Funnel+Sans:wght@400..600&family=DM+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/system.css">
+<link rel="stylesheet" href="assets/motion/motion.css">
+<link rel="stylesheet" href="assets/layout/layout.css">
 <style>
-:root{
-  --bg:#f5efe3; --surface:#fffdf8; --surface-2:#f9f4ea; --ink:#1b2a2c; --muted:#5f6c6a; --line:#e3d8c4;
-  --sea:#0d6b67; --sea-soft:#d8ece8; --coral:#c9562c; --coral-soft:#f8e2d6; --sun:#b98a1d; --good:#2c7a4b; --good-soft:#dcefe2; --bad:#b3372b; --bad-soft:#f7dcd8;
-  --code-bg:#14272a; --code-ink:#e6efe9; --code-kw:#7fd1c4; --code-str:#f2b880; --code-num:#e8a3c9; --code-fn:#a9c7ff; --code-cm:#7a8f8c;
-  --shadow:0 1px 2px rgba(27,42,44,.06),0 8px 24px rgba(27,42,44,.06);
-  --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,"Noto Sans TC",monospace;
-  --sans:"Noto Sans TC",system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
-  --serif:"Noto Serif TC","Songti TC",serif;
+:root {
+  --p-bg: #f6f4ef; --p-surface: #e9e6df; --p-ink: #0d2b35; --p-muted: #4b6670;
+  --p-accent: #0b6896; --p-accent-ink: #f6f4ef; --p-action: #0b6896; --p-action-ink: #f6f4ef;
+  --p-inv-bg: #0d2b35; --p-inv-surface: #1c3740; --p-inv-ink: #f6f4ef; --p-inv-muted: #97a2a3;
+  --p-inv-accent: #f6f4ef; --p-inv-accent-ink: #0d2b35; --p-inv-action: #f6f4ef; --p-inv-action-ink: #0d2b35;
+  --font-display: "Funnel Display", system-ui, sans-serif;
+  --font-text: "Funnel Sans", system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display-weight: 400;
+  --display-tracking: -0.03em;
+  --display-tracking-xl: -0.04em;
+  --ly-scale: 0.98;
 }
-@media (prefers-color-scheme:dark){:root{
-  --bg:#0e1819; --surface:#152224; --surface-2:#1a2a2c; --ink:#e7eeea; --muted:#9aaba8; --line:#28393b;
-  --sea:#5cc0b4; --sea-soft:#173a38; --coral:#f08a5d; --coral-soft:#3b2419; --sun:#e0b54a; --good:#6fcf97; --good-soft:#163323; --bad:#ff8a7a; --bad-soft:#3a1c18;
-  --code-bg:#0a1415; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
-}}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:72px}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 var(--sans);-webkit-font-smoothing:antialiased}
-a{color:var(--sea)}
-h1,h2,h3{font-family:var(--serif);line-height:1.3;margin:0}
-code,kbd{font-family:var(--mono);font-size:.88em}
-p code,li code,td code{background:var(--surface-2);border:1px solid var(--line);padding:0 .35em;border-radius:5px}
-.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
-@media (max-width:600px){.wrap{padding:0 16px}}
+</style>
+<script>document.documentElement.classList.add('m-enter');setTimeout(()=>document.documentElement.classList.add('m-enter-done'),700)</script>
+<!-- page CSS: the CJK fallback the dealt Latin faces lack, the hero's window, and what sits inside the app visuals -->
+<style>
+:root {
+  /* the user's five swatches, darkest to lightest */
+  --sea-1: #0b6896; --sea-2: #0a97be; --sea-3: #24a3ab; --sea-4: #8fc2bb; --sea-5: #dcdad4;
+  --font-display: "Funnel Display", "Noto Sans TC", system-ui, sans-serif;
+  --font-text: "Funnel Sans", "Noto Sans TC", system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, "Noto Sans TC", monospace;
+  --code-bg: #0d2b35; --code-ink: #e6eeec; --code-kw: #8fc2bb; --code-fn: #6fd0e6; --code-str: #e6cfa3; --code-num: #7fd8d0; --code-cm: #7f9aa0;
+  --ok: #0f5f63; --ok-soft: color-mix(in oklab, #24a3ab 16%, var(--p-bg));
+  --bad: #a8402f; --bad-soft: color-mix(in oklab, #c2553f 13%, var(--p-bg));
+}
+html[data-ground="sky"] { --ground-bg: #cfe4e1; --ground-surface: #e2efed; --ground-ink: #0d2b35; --ground-muted: #3f5d66; --ground-accent: #0b6896; }
+.ic { width: 20px; height: 20px; flex: none; display: inline-block; vertical-align: middle; }
+.brand { width: 20px; height: 20px; flex: none; display: inline-block; vertical-align: middle; }
+:lang(zh-Hant) h1, :lang(zh-Hant) h2 { letter-spacing: -0.01em; }
+.mono, code { font-family: var(--font-mono); }
+.hero__proof { display: flex; align-items: center; gap: var(--s-3); margin-top: var(--s-6); color: var(--muted); font-size: var(--t-small); }
 
-/* nav */
-.nav{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-.nav .wrap{display:flex;align-items:center;gap:20px;height:56px}
-.brand{font-family:var(--serif);font-weight:900;font-size:18px;text-decoration:none;color:var(--ink);white-space:nowrap}
-.brand span{color:var(--sea)}
-.nav nav{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;flex:1}
-.nav nav a{color:var(--muted);text-decoration:none;font-size:14px;padding:6px 10px;border-radius:8px;white-space:nowrap}
-.nav nav a:hover{background:var(--surface-2);color:var(--ink)}
-.status{font-size:12px;display:flex;align-items:center;gap:6px;color:var(--muted);white-space:nowrap}
-.status i{width:8px;height:8px;border-radius:50%;background:var(--sun);display:inline-block}
-.status.ok i{background:var(--good)} .status.err i{background:var(--bad)}
-@media (max-width:720px){.brand{display:none}.status b{display:none}}
+/* --- the hero's window (inside the visual) --- */
+.hw { border-radius: var(--r-md); background: var(--p-bg); border: 1px solid color-mix(in oklab, var(--p-ink) 14%, transparent); overflow: hidden; font-size: 13px; color: var(--p-ink); }
+.hw__bar { display: flex; align-items: center; gap: var(--s-3); height: 40px; padding: 0 var(--s-4); border-bottom: 1px solid color-mix(in oklab, var(--p-ink) 10%, transparent); color: var(--p-muted); }
+.hw__dots { display: flex; gap: 6px; } .hw__dots i { width: 10px; height: 10px; border-radius: 50%; background: color-mix(in oklab, var(--p-ink) 16%, transparent); }
+.hw__body { display: grid; grid-template-columns: 168px minmax(0, 1fr); min-height: 640px; }
+.hw__side { border-right: 1px solid color-mix(in oklab, var(--p-ink) 10%, transparent); padding: var(--s-4) var(--s-3); display: grid; align-content: start; gap: 2px; }
+.hw__side span { display: flex; align-items: center; gap: var(--s-2); padding: 6px var(--s-2); border-radius: 6px; font-family: var(--font-mono); font-size: 13px; color: var(--p-muted); }
+.hw__side span .ic { width: 16px; height: 16px; }
+.hw__side .is-on { background: color-mix(in oklab, var(--sea-3) 16%, transparent); color: var(--p-ink); }
+.hw__side b { font: 500 13px var(--font-text); color: var(--p-muted); padding: var(--s-3) var(--s-2) var(--s-1); }
+.hw__main { padding: var(--s-4) var(--ly-cut-room, 48px) var(--s-4) var(--s-4); display: grid; align-content: start; gap: var(--s-3); }
+.hw__code { margin: 0; background: var(--code-bg); color: var(--code-ink); border-radius: 8px; padding: var(--s-3) var(--s-4); font: 13px/1.65 var(--font-mono); white-space: pre; overflow: hidden; }
+.hw__run { display: flex; align-items: center; gap: var(--s-3); color: var(--p-muted); }
+.hw__btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 6px; background: var(--sea-1); color: #fff; font-weight: 500; }
+.hw__btn .ic { width: 14px; height: 14px; }
+.hw table { width: 100%; border-collapse: collapse; }
+.hw th, .hw td { text-align: left; padding: 7px 10px; border-bottom: 1px solid color-mix(in oklab, var(--p-ink) 8%, transparent); white-space: nowrap; }
+.hw th { font: 500 13px var(--font-mono); color: var(--p-muted); }
+.hw td.n { text-align: right; font-family: var(--font-mono); }
+.chip { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 999px; font: 500 13px/1 var(--font-text); white-space: nowrap; }
+.chip--sea { background: color-mix(in oklab, var(--sea-2) 15%, transparent); color: #075a7a; }
+.chip--sand { background: var(--sea-5); color: #4a4a43; }
+.chip--teal { background: color-mix(in oklab, var(--sea-4) 40%, transparent); color: #155e5a; }
+.hw-card { left: var(--s-6); bottom: var(--s-6); width: 300px; padding: var(--s-4); border-radius: var(--r-md); background: var(--p-bg); border: 1px solid color-mix(in oklab, var(--p-ink) 14%, transparent); display: grid; gap: var(--s-3); z-index: 2; color: var(--p-ink); }
+.hw-card__row { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+.hw-card .hw-card__t { font: 500 16px/1.3 var(--font-text); margin: 0; display: block; }
+.hw-card p { display: flex; gap: var(--s-2); align-items: flex-start; margin: 0; font-size: 14px; line-height: 1.45; }
+.hw-card p .ic { width: 18px; height: 18px; color: var(--sea-3); margin-top: 1px; }
+.hw-card p .ic.warn { color: var(--bad); }
 
-/* hero */
-.hero{position:relative;overflow:hidden;padding:64px 0 56px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,var(--sea-soft),transparent 85%)}
-.hero .eyebrow{font-size:13px;letter-spacing:.18em;color:var(--sea);font-weight:700}
-.hero h1{font-size:clamp(34px,6vw,60px);font-weight:900;margin:10px 0 12px}
-.hero p.lead{font-size:18px;color:var(--muted);max-width:640px;margin:0}
-.stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
-.stats div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 16px;box-shadow:var(--shadow)}
-.stats b{font-family:var(--serif);font-size:24px;color:var(--sea);margin-right:6px}
-.stats span{font-size:14px;color:var(--muted)}
-.waves{position:absolute;right:-40px;bottom:-10px;width:520px;max-width:70%;opacity:.5;pointer-events:none}
-.waves path{fill:none;stroke:var(--sea);stroke-width:2}
+/* --- case --- */
+.story { display: grid; gap: var(--s-4); font-size: var(--t-body); line-height: 1.75; }
+.story p { margin: 0; max-width: 62ch; }
+.roles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gutter); }
+.role { transition: transform var(--dur) var(--ease); }
+.role:hover { transform: translateY(-2px); }
+.role { display: grid; gap: var(--s-3); align-content: start; padding: var(--s-5); border-radius: var(--r-lg); background: var(--surface); }
+.role__ic { width: 32px; height: 32px; border-radius: 9px; display: inline-grid; place-items: center; background: var(--p-bg); color: var(--sea-1); flex: none; }
+.role__h { display: flex; align-items: center; gap: var(--s-3); }
+.mini { width: 100%; min-height: 84px; border-collapse: collapse; background: var(--p-bg); border-radius: var(--r-sm); overflow: hidden; font-size: 13px; }
+.mini th, .mini td { text-align: left; padding: 6px 10px; white-space: nowrap; border-bottom: 1px solid var(--line); }
+.mini th { font: 500 13px var(--font-mono); color: var(--muted); }
+.mini td.n { text-align: right; font-family: var(--font-mono); }
+.mini tr:last-child td { border-bottom: 0; }
+.role__ic .ic { width: 18px; height: 18px; }
+.role h3 { font: 500 var(--t-card)/1.3 var(--font-text); margin: 0; letter-spacing: 0; }
+.role ul { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-2); }
+.role ul { gap: 0; }
+.role__q { display: flex; gap: var(--s-3); align-items: center; min-height: 36px; color: var(--ink); text-decoration: none; font-size: 15px; }
+.role__q .mono { font-size: 13px; color: var(--sea-1); min-width: 26px; }
+.role__q:hover span:last-child { text-decoration: underline; text-underline-offset: 3px; }
+.bars { display: block; width: 100%; height: 84px; }
+.bars text { font: 13px var(--font-text); fill: var(--p-ink); } .bars text.v { font-family: var(--font-mono); fill: var(--p-muted); }
+.bars rect { fill: var(--sea-2); }
+.stat { display: grid; gap: var(--s-1); align-content: center; min-height: 84px; padding: var(--s-3) var(--s-4); border-radius: var(--r-sm); background: var(--p-bg); }
+.stat__n { font: var(--display-weight) 32px/1.1 var(--font-display); color: var(--sea-1); }
+.stat__n small { font: 500 14px var(--font-text); margin-left: 4px; color: var(--muted); }
+.stat__l { font-size: 13px; color: var(--muted); }
+.levels { display: flex; flex-wrap: wrap; gap: var(--s-2); align-content: center; min-height: 84px; }
+.lv { display: inline-flex; gap: 6px; align-items: baseline; padding: 6px 10px; border-radius: 999px; background: var(--p-bg); font-size: 13px; color: var(--muted); }
+.lv b { font-weight: 500; color: var(--ink); }
+.rules-label { margin: 0 0 var(--s-6); font: 500 var(--t-lead)/1.4 var(--font-text); }
+.rules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gutter); margin: 0; padding: 0; list-style: none; }
+.rule__h { display: flex; align-items: center; gap: var(--s-3); }
+.rule__h .ic { color: var(--sea-1); }
+.rule { display: grid; gap: var(--s-3); grid-template-rows: auto 1fr auto; padding: var(--s-5) var(--s-6) var(--s-6); border-radius: var(--r-lg); border: 1px solid var(--line); }
+.rule__code { margin: 0; padding: var(--s-3) var(--s-4); min-height: 80px; border-radius: var(--r-sm); background: var(--code-bg); color: var(--code-ink); font: 13px/1.65 var(--font-mono); white-space: pre-wrap; }
+.rule__n { display: flex; align-items: center; gap: var(--s-3); color: var(--sea-1); }
+.rule__n span { font: 500 13px var(--font-mono); color: var(--muted); }
+.rule h3 { font: 500 var(--t-card)/1.3 var(--font-text); margin: 0; letter-spacing: 0; }
+.rule p { margin: 0; font-size: var(--t-body); line-height: 1.6; }
+code.k { font-size: .9em; padding: 1px 6px; border-radius: 6px; background: color-mix(in oklab, var(--sea-4) 28%, transparent); color: var(--ink); white-space: nowrap; }
 
-/* sections */
-section.sec{padding:64px 0;border-bottom:1px solid var(--line)}
-.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
-.sec-num{font-family:var(--serif);font-weight:900;font-size:15px;color:var(--coral);border:1.5px solid var(--coral);border-radius:999px;width:32px;height:32px;display:grid;place-items:center;flex:none;transform:translateY(-3px)}
-.sec-head h2{font-size:clamp(26px,3.6vw,34px)}
-.sec-sub{color:var(--muted);margin:0 0 32px;max-width:760px}
-h3.sub{font-size:20px;margin:40px 0 14px}
+/* --- hub diagram --- */
+.hub { display: block; width: 100%; height: auto; margin-top: var(--s-4); }
+.hub__lines path { fill: none; stroke: var(--sea-3); stroke-width: 1.75; }
+.hub__core { fill: var(--p-bg); stroke: var(--sea-1); stroke-width: 1.5; }
+.hub .brand { width: 24px; height: 24px; }
+.hub__db { font: 500 12px var(--font-mono); fill: var(--p-ink); }
+.hub__node rect { fill: var(--p-bg); stroke: color-mix(in oklab, var(--p-ink) 18%, transparent); }
+.hub__node text { font: 500 15px var(--font-text); fill: var(--p-ink); }
+.gh { display: inline-flex; align-items: center; gap: var(--s-2); }
+/* tab panels share one cell, so a section never changes height when a tab opens */
+#tpanels, #cpanels { display: grid; }
+#tpanels > [role="tabpanel"], #cpanels > [role="tabpanel"] { grid-area: 1 / 1; position: relative; z-index: 1; }
+#tpanels > [role="tabpanel"][hidden], #cpanels > [role="tabpanel"][hidden] { display: grid; visibility: hidden; z-index: 0; pointer-events: none; }
+/* --- ERD --- */
+.erd-frame { border-radius: var(--r-lg); background: var(--surface); padding: var(--s-6); }
+.erd { display: block; width: 100%; height: auto; overflow: visible; }
+.erd--tall, .erd--mid { display: none; }
+.erd-box { fill: var(--p-bg); stroke: color-mix(in oklab, var(--p-ink) 16%, transparent); stroke-width: 1; }
+.erd-head { fill: var(--sea-1); }
+.erd-t:nth-of-type(3n+2) .erd-head { fill: #0a7fa3; }
+.erd-name { fill: #fff; font: 500 15px var(--font-mono); }
+.erd-zh { fill: #fff; font: 500 14px var(--font-text); opacity: .86; }
+.erd-col { fill: var(--p-ink); font: 13.5px var(--font-mono); }
+.erd-col.is-pk { font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+.erd-type { fill: var(--p-muted); font: 12.5px var(--font-mono); }
+.erd-k--pk { fill: color-mix(in oklab, var(--sea-1) 14%, transparent); } .erd-kt--pk { fill: var(--sea-1); }
+.erd-k--fk { fill: color-mix(in oklab, var(--sea-3) 22%, transparent); } .erd-kt--fk { fill: #136f74; }
+.erd-k--uq { fill: var(--sea-5); } .erd-kt--uq { fill: #4a4a43; }
+.erd-kt { font: 500 10.5px var(--font-mono); }
+.erd-link { fill: none; stroke: var(--sea-3); stroke-width: 1.75; }
+.erd-mk { fill: none; stroke: var(--sea-3); stroke-width: 1.75; }
+.erd-t { cursor: pointer; outline: none; transition: opacity var(--dur) var(--ease); }
+.erd-t:focus-visible { outline: 2px solid var(--action); outline-offset: 3px; }
+.erd-t:focus-visible .erd-box { stroke: var(--action); stroke-width: 2.5; fill: color-mix(in oklab, var(--sea-4) 30%, var(--p-bg)); }
+.erd.is-focus .erd-t:not(.on) { opacity: .3; }
+.erd.is-focus .erd-link:not(.on) { opacity: .15; }
+.erd .erd-t.on .erd-box { stroke: var(--sea-1); stroke-width: 2; }
+.erd-legend { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); margin-top: var(--s-5); font-size: var(--t-small); color: var(--muted); }
+.erd-legend span { display: inline-flex; align-items: center; gap: var(--s-2); }
+.lg::after { font: 500 12px/1 var(--font-mono); padding: 4px 6px; border-radius: 5px; }
+.lg--pk::after { content: "PK"; background: color-mix(in oklab, var(--sea-1) 14%, transparent); color: var(--sea-1); }
+.lg--fk::after { content: "FK"; background: color-mix(in oklab, var(--sea-3) 22%, transparent); color: #136f74; }
+.lg--uq::after { content: "UQ"; background: var(--sea-5); color: #4a4a43; }
+.key--pk { background: color-mix(in oklab, var(--sea-1) 14%, transparent); color: var(--sea-1); }
+.key--fk { background: color-mix(in oklab, var(--sea-3) 22%, transparent); color: #136f74; }
+.key--uq { background: var(--sea-5); color: #4a4a43; }
 
-.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
-.grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
-.who{padding:18px 18px 14px}
-.who .role{font-weight:700;font-size:17px;display:flex;align-items:center;gap:8px}
-.who .role em{font-style:normal;font-size:20px}
-.who ul{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:14.5px}
-.story{padding:22px 24px;font-size:16.5px}
-.story p{margin:0 0 10px}.story p:last-child{margin:0}
-.pain{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
-.pain a{display:flex;gap:12px;text-decoration:none;color:var(--ink);padding:14px 16px;align-items:flex-start}
-.pain a:hover{border-color:var(--sea)}
-.pain .tag{flex:none;font:600 12px var(--mono);color:var(--sea);background:var(--sea-soft);border-radius:6px;padding:2px 7px;margin-top:3px}
-.pain .q{font-weight:500}
-.pain .d{font-size:14px;color:var(--muted)}
-.rules{counter-reset:r;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px;padding:0;margin:0;list-style:none}
-.rules li{counter-increment:r;padding:14px 16px 14px 52px;position:relative;font-size:15px}
-.rules li::before{content:counter(r);position:absolute;left:16px;top:14px;width:24px;height:24px;border-radius:50%;background:var(--coral-soft);color:var(--coral);font:700 13px/24px var(--sans);text-align:center}
-.rules b{display:block;margin-bottom:2px}
-.rules span{color:var(--muted)}
+/* --- shared data tables --- */
+.dt-scroll { overflow: auto; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--p-bg); }
+table.dt { border-collapse: collapse; width: 100%; font-size: 14px; }
+.dt th, .dt td { padding: 9px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.dt th { white-space: normal; position: sticky; top: 0; z-index: 1; background: color-mix(in oklab, var(--p-surface) 70%, var(--p-bg)); font: 500 13px var(--font-mono); color: var(--muted); }
+.dt td.n { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.dt tr:last-child td { border-bottom: 0; }
+.dt .null { font: 13px var(--font-mono); color: var(--muted); }
+.dt tr.extra td { background: var(--bad-soft); }
+.dt tr.extra td:first-child { box-shadow: inset 3px 0 var(--bad); }
+.dict td:first-child { font-family: var(--font-mono); font-weight: 500; }
+.dict td:nth-child(2) { font: 13px var(--font-mono); color: var(--muted); }
+.dict td:last-child { white-space: normal; min-width: 180px; }
+.dict .key { font: 500 11px var(--font-mono); padding: 2px 5px; border-radius: 4px; margin-left: 8px; vertical-align: 1px; }
 
-/* ERD */
-.erd-wrap{padding:16px;overflow-x:auto}
-.erd{width:100%;min-width:760px;height:auto;display:block}
-.erd-box{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
-.erd-head{fill:var(--sea)}
-.erd-title{fill:#fff;font:700 15px var(--mono)}
-.erd-zh{font:500 13px var(--sans);fill:#fff;opacity:.85}
-.erd-col{fill:var(--ink);font:13px var(--mono)} .erd-col.is-pk{font-weight:600;text-decoration:underline}
-.erd-type{fill:var(--muted);font:11px var(--mono)}
-.erd-key{font:700 10px var(--mono)} .erd-key-pk{fill:var(--sun)} .erd-key-fk{fill:var(--coral)} .erd-key-uq{fill:var(--muted)}
-.erd-sep{stroke:var(--line)}
-.erd-link{fill:none;stroke:var(--muted);stroke-width:1.6}
-.erd-mk{fill:none;stroke:var(--muted);stroke-width:1.6}
-.erd-table{transition:opacity .2s}
-.erd.focus .erd-table:not(.on){opacity:.28}
-.erd.focus .erd-link:not(.on){opacity:.15}
-.erd .erd-table.on .erd-box{stroke:var(--sea);stroke-width:2.5}
-.legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13.5px;color:var(--muted);padding:4px 4px 0}
-.legend b{font-family:var(--mono);font-size:12px}
-.legend .pk{color:var(--sun)} .legend .fk{color:var(--coral)}
-.rels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px;margin-top:14px;font-size:14.5px}
-.rels div{padding:10px 14px;border:1px dashed var(--line);border-radius:10px}
-.rels code{background:none;border:0;padding:0;color:var(--sea)}
+/* --- tables section --- */
+.tpanel { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--gutter); margin-top: var(--s-6); }
+.tpanel__dict { grid-column: span 6; } .tpanel__rows { grid-column: 7 / -1; }
+.lbl { margin: 0 0 var(--s-3); font: 500 var(--t-label)/1.4 var(--font-text); color: var(--muted); }
+.tpanel .dt-scroll { height: 400px; }
+.tpanel__desc { grid-column: 1 / -1; margin: 0 0 var(--s-6); font-size: var(--t-body); }
+.tab small { font-family: var(--font-mono); margin-left: 6px; }
 
-/* tabs & data tables */
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.tab{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 14px;font:500 14px var(--sans);cursor:pointer}
-.tab small{font-family:var(--mono);color:var(--muted);margin-left:6px}
-.tab[aria-selected="true"]{background:var(--sea);border-color:var(--sea);color:#fff}
-.tab[aria-selected="true"] small{color:#fff;opacity:.8}
-.tpanel{padding:20px}
-.tpanel .tdesc{margin:0 0 14px;color:var(--muted)}
-.tpanel h4{margin:22px 0 8px;font-size:15px}
-.dual{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:22px}
-@media (max-width:900px){.dual{grid-template-columns:minmax(0,1fr)}}
-.tbl-scroll{overflow:auto;border:1px solid var(--line);border-radius:10px;max-height:440px;background:var(--surface)}
-table.t{border-collapse:collapse;width:100%;font-size:13.5px}
-table.t th,table.t td{padding:7px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
-table.t th{position:sticky;top:0;background:var(--surface-2);font:600 12.5px var(--mono);color:var(--muted);z-index:1}
-table.t td.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
-table.t tr:last-child td{border-bottom:0}
-table.t .null{color:var(--muted);font:italic 12px var(--mono);opacity:.75}
-table.t tr.extra td{background:var(--bad-soft)}
-table.t tr.extra td:first-child{box-shadow:inset 3px 0 var(--bad)}
-.dict td:first-child{font-family:var(--mono);font-weight:600}
-.dict td:nth-child(2){font-family:var(--mono);font-size:12px;color:var(--muted)}
-.dict td:last-child{white-space:normal}
-.k{font:700 10.5px var(--mono);padding:1px 5px;border-radius:4px;margin-left:6px;vertical-align:1px}
-.k.PK{background:color-mix(in srgb,var(--sun) 20%,transparent);color:var(--sun)}
-.k.FK{background:var(--coral-soft);color:var(--coral)}
-.k.UQ{background:var(--surface-2);color:var(--muted)}
-details.ddl{margin-top:18px}
-details.ddl summary{cursor:pointer;color:var(--sea);font-weight:500}
+/* --- the app frame: query workbench --- */
+.section-head--app { margin-bottom: var(--head-gap); row-gap: var(--s-4); }
+.section-head--app .t-lead { margin: 0; color: var(--muted); }
+.app { border-radius: var(--r-lg); border: 1px solid var(--line-strong); background: var(--p-bg); overflow: hidden; display: grid; grid-template-columns: 300px minmax(0, 1fr); height: 1160px; }
+.app__side { border-right: 1px solid var(--line); background: color-mix(in oklab, var(--p-surface) 40%, var(--p-bg)); display: grid; grid-template-rows: auto 1fr auto; min-height: 0; }
+.app__sidehead { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); padding: var(--s-5) var(--s-5) var(--s-3); font: 500 var(--t-small) var(--font-text); color: var(--muted); }
+.qlist { display: grid; align-content: start; gap: 2px; padding: 0 var(--s-3) var(--s-3); overflow: auto; }
+.qbtn { appearance: none; border: 0; background: transparent; text-align: left; border-radius: var(--r-sm); padding: var(--s-3); display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 2px var(--s-2); cursor: pointer; color: var(--ink); font: inherit; min-height: 44px; transition: background-color var(--dur) var(--ease); }
+.qbtn:hover { background: color-mix(in oklab, var(--sea-4) 18%, transparent); }
+.qbtn[aria-current="true"] { background: color-mix(in oklab, var(--sea-4) 32%, transparent); }
+.qbtn__no { grid-row: span 2; font: 500 13px/22px var(--font-mono); color: var(--muted); }
+.qbtn[aria-current="true"] .qbtn__no { color: var(--sea-1); }
+.qbtn__t { font: 500 15px/1.4 var(--font-text); }
+.qbtn__m { font-size: 13px; color: var(--muted); }
+.app__engine { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-4) var(--s-5); font-size: 13px; color: var(--muted); }
+.app__engine .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sea-5); }
+.app__engine.is-ready .dot { background: var(--sea-3); }
+.app__engine.is-fail .dot { background: var(--bad); }
+.app__main { display: grid; grid-template-rows: auto auto auto auto minmax(0, 1fr); gap: var(--s-5); padding: var(--s-6) var(--s-7); min-width: 0; min-height: 0; }
+.app__meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.app__title { font: var(--display-weight) 28px/1.25 var(--font-display); margin: var(--s-2) 0 0; letter-spacing: -0.01em; }
+.app__q { margin: var(--s-2) 0 0; font-size: var(--t-body); max-width: 70ch; }
+.editor { position: relative; background: var(--code-bg); border-radius: var(--r-md); overflow: hidden; border: 1px solid transparent; }
+.editor:focus-within { border-color: var(--sea-2); box-shadow: 0 0 0 3px color-mix(in oklab, var(--sea-2) 30%, transparent); }
+.editor pre, .editor textarea { margin: 0; padding: var(--s-4) var(--s-5); font: 14px/1.7 var(--font-mono); tab-size: 2; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-all; border: 0; width: 100%; letter-spacing: 0; word-spacing: 0; }
+.editor pre { position: absolute; inset: 0; color: var(--code-ink); pointer-events: none; overflow: hidden; }
+.editor textarea { position: relative; display: block; resize: none; background: transparent; color: transparent; caret-color: #fff; outline: none; overflow: hidden; min-height: 96px; }
+.editor textarea::selection { background: rgba(143, 194, 187, .32); color: transparent; }
+.tk-kw { color: var(--code-kw); } .tk-fn { color: var(--code-fn); } .tk-str { color: var(--code-str); } .tk-num { color: var(--code-num); } .tk-cm { color: var(--code-cm); font-style: italic; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
+.toolbar .btn .ic { width: 18px; height: 18px; }
+.kbd { font: 13px var(--font-mono); color: var(--muted); }
+.notes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gutter); }
+.note { display: flex; gap: var(--s-3); align-items: flex-start; padding: var(--s-4) var(--s-5); border-radius: var(--r-md); background: var(--surface); font-size: 15px; line-height: 1.6; }
+.note .ic { color: var(--sea-1); margin-top: 2px; }
+.note b { font-weight: 500; }
+.results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gutter); min-height: 0; }
+.res { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: var(--s-3); min-height: 0; min-width: 0; }
+.res__head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: 28px; }
+.res__head .lbl { margin: 0; }
+.ed-wrap .lbl { display: block; }
+.res__meta { display: inline-flex; align-items: center; gap: var(--s-2); font-size: 13px; color: var(--muted); }
+.res .dt-scroll { min-height: 0; }
+.state { white-space: nowrap; flex: none; display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; font: 500 13px/1 var(--font-text); }
+.state .ic { width: 15px; height: 15px; }
+.state--ok { background: var(--ok-soft); color: var(--ok); }
+.state--diff { background: var(--sea-5); color: #4a4a43; }
+.state--err { background: var(--bad-soft); color: var(--bad); }
+.empty { display: grid; place-items: center; align-content: center; gap: var(--s-2); height: 100%; min-height: 140px; border: 1px dashed var(--line-strong); border-radius: var(--r-md); color: var(--muted); font-size: 15px; text-align: center; padding: var(--s-5); }
+.empty .ic { color: var(--sea-3); width: 24px; height: 24px; }
+.errbox { border: 1px solid color-mix(in oklab, var(--bad) 40%, transparent); background: var(--bad-soft); color: var(--ink); border-radius: var(--r-md); padding: var(--s-4) var(--s-5); font-size: 15px; line-height: 1.6; display: grid; gap: var(--s-2); align-content: start; }
+.errbox code { color: var(--bad); font-size: 14px; }
+.errbox p { margin: 0; display: flex; gap: var(--s-2); }
+.errbox .ic { color: var(--bad); margin-top: 2px; }
+.okbox { border: 1px solid var(--line-strong); border-radius: var(--r-md); padding: var(--s-4) var(--s-5); font-size: 15px; }
+.multi { font: 13px var(--font-mono); color: var(--muted); margin: var(--s-3) 0 var(--s-2); }
 
-/* code */
-pre.code,.editor pre,.editor textarea{font:13.5px/1.65 var(--mono);tab-size:2}
-pre.code{margin:10px 0 0;background:var(--code-bg);color:var(--code-ink);padding:16px 18px;border-radius:12px;overflow:auto;max-height:420px}
-.tk-kw{color:var(--code-kw);font-weight:600}.tk-str{color:var(--code-str)}.tk-num{color:var(--code-num)}.tk-fn{color:var(--code-fn)}.tk-cm{color:var(--code-cm);font-style:italic}
-.editor{position:relative;background:var(--code-bg);border-radius:12px;overflow:hidden;border:1px solid transparent}
-.editor:focus-within{border-color:var(--sea);box-shadow:0 0 0 3px color-mix(in srgb,var(--sea) 25%,transparent)}
-.editor pre,.editor textarea{margin:0;padding:16px 18px;white-space:pre;overflow:auto;border:0;width:100%;letter-spacing:0;word-spacing:0}
-.editor pre{position:absolute;inset:0;color:var(--code-ink);pointer-events:none;overflow:hidden}
-.editor textarea{position:relative;display:block;resize:none;background:transparent;color:transparent;caret-color:#fff;outline:none;min-height:120px;overflow-y:hidden}
-.editor textarea::selection{background:rgba(127,209,196,.3);color:transparent}
+/* --- compare --- */
+.cmp { grid-template-columns: minmax(0, 1fr); margin-top: var(--s-6); display: grid; gap: var(--s-6); height: 1010px; grid-template-rows: auto minmax(0, 1fr) auto; }
+.cmp__q { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-5); margin: 0; font-size: var(--t-lead); }
+.cmp__q .link { font-size: var(--t-small); }
+.vars { display: grid; gap: var(--gutter); grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); min-height: 0; }
+.var { display: grid; grid-template-rows: auto auto auto auto minmax(0, 1fr); gap: var(--s-3); min-width: 0; min-height: 0; padding: var(--s-5); border-radius: var(--r-lg); background: var(--surface); }
+.var__top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2); }
+.var__top label { font-weight: 500; font-size: 15px; }
+.var .editor pre, .var .editor textarea { font-size: 13px; padding: var(--s-3) var(--s-4); }
+.var .editor textarea { min-height: 72px; }
+.var__note { font-size: 13px; color: var(--muted); min-height: 20px; }
+.var__note .lost { color: var(--bad); font-weight: 500; }
+.var .out { min-height: 0; overflow: auto; }
+.var .out .dt-scroll { border: 0; }
+.why { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; }
+.why h3 { margin: 0 0 var(--s-2); font: 500 var(--t-card)/1.3 var(--font-text); letter-spacing: 0; }
+.why p { margin: 0 0 var(--s-2); font-size: var(--t-body); line-height: 1.7; max-width: 92ch; }
+.why p:last-child { margin: 0; }
 
-/* query workspace */
-.ws{display:grid;grid-template-columns:280px minmax(0,1fr);gap:20px;align-items:start}
-@media (max-width:960px){.ws{grid-template-columns:minmax(0,1fr)}}
-.qlist{display:flex;flex-direction:column;gap:6px;position:sticky;top:76px}
-@media (max-width:960px){.qlist{position:static;flex-direction:row;overflow-x:auto;padding-bottom:6px}}
-.qbtn{appearance:none;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;cursor:pointer;color:var(--ink);font:inherit;display:flex;gap:10px}
-@media (max-width:960px){.qbtn{min-width:210px}}
-.qbtn .no{font:700 13px var(--mono);color:var(--muted);flex:none;width:22px}
-.qbtn .tt{font-size:14.5px;font-weight:500;line-height:1.45}
-.qbtn .tp{display:block;font:11.5px var(--mono);color:var(--muted);margin-top:2px}
-.qbtn[aria-current="true"]{border-color:var(--sea);background:var(--sea-soft)}
-.qbtn[aria-current="true"] .no{color:var(--sea)}
-.qmain{padding:22px}
-.qtop{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:6px}
-.pill{font-size:12px;padding:2px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted)}
-.pill.role{background:var(--coral-soft);border-color:transparent;color:var(--coral);font-weight:500}
-.qmain h3{font-size:22px;margin:4px 0 6px}
-.qmain .qq{margin:0 0 14px;font-size:16px}
-.uses{font-size:13px;color:var(--muted);margin:10px 0 0;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.uses code{background:var(--sea-soft);border:0;color:var(--sea);padding:1px 7px;border-radius:6px}
-.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 0}
-.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:8px 14px;font:500 14px var(--sans);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-.btn:hover{border-color:var(--sea)}
-.btn.primary{background:var(--sea);border-color:var(--sea);color:#fff}
-.btn.primary:hover{filter:brightness(1.08)}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.hint{font-size:12.5px;color:var(--muted)}
-.tip{margin-top:14px;font-size:14.5px;background:var(--surface-2);border-left:3px solid var(--sun);padding:10px 14px;border-radius:0 10px 10px 0}
-.tip b{color:var(--sun)}
-details.ex{margin-top:12px;font-size:14.5px}
-details.ex summary{cursor:pointer;color:var(--sea);font-weight:500}
-details.ex p{margin:8px 0 0;color:var(--ink)}
-.results{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:20px}
-@media (max-width:1100px){.results{grid-template-columns:minmax(0,1fr)}}
-.rhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap}
-.rhead h4{margin:0;font-size:15px}
-.meta{font-size:12.5px;color:var(--muted)}
-.badge{font-size:12.5px;font-weight:600;padding:2px 10px;border-radius:999px}
-.badge.ok{background:var(--good-soft);color:var(--good)} .badge.diff{background:var(--coral-soft);color:var(--coral)} .badge.err{background:var(--bad-soft);color:var(--bad)}
-.empty{border:1.5px dashed var(--line);border-radius:10px;padding:28px 16px;text-align:center;color:var(--muted);font-size:14px}
-.errbox{border:1px solid var(--bad);background:var(--bad-soft);color:var(--bad);border-radius:10px;padding:12px 14px;font:13.5px/1.6 var(--mono);white-space:pre-wrap}
-.errbox b{font-family:var(--sans)}
-.okbox{border:1px solid var(--good);background:var(--good-soft);color:var(--good);border-radius:10px;padding:12px 14px;font-size:14px}
-.multi{font-size:12.5px;color:var(--muted);margin:10px 0 4px;font-family:var(--mono)}
+/* --- nav panel card and footer --- */
+.mini-code { margin: 0; height: 100%; padding: var(--s-4); background: var(--code-bg); color: var(--code-ink); font: 13px/1.6 var(--font-mono); white-space: pre; overflow: hidden; }
+.footer__credits { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-6); align-items: center; }
+.footer__credits span { display: inline-flex; gap: var(--s-2); align-items: center; }
+.ground-inverse .brand--sqlite path { fill: #8fc2bb; }
+.footer .brand { width: 18px; height: 18px; }
 
-/* compare */
-.cmp{padding:22px;margin-bottom:22px}
-.cmp-head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline}
-.cmp-head h3{font-size:21px}
-.cmp-head .no{font:700 14px var(--mono);color:var(--coral)}
-.cmp .qq{margin:6px 0 16px;color:var(--muted)}
-.cmp .qq b{color:var(--ink);font-weight:500}
-.variants{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:16px}
-.var{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--surface-2);min-width:0;display:flex;flex-direction:column;gap:10px}
-.var-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.var-top b{font-size:14.5px}
-.vtag{font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px}
-.vtag.bad{background:var(--bad-soft);color:var(--bad)} .vtag.good{background:var(--good-soft);color:var(--good)}
-.var .editor textarea,.var .editor pre{font-size:12.5px;padding:12px 14px}
-.var .editor textarea{min-height:80px}
-.var .tbl-scroll{max-height:320px}
-.var .note{font-size:13px;color:var(--muted)}
-.var .note .lost{color:var(--bad);font-weight:600}
-.why{margin-top:16px;padding:16px 18px;border-radius:12px;background:var(--sea-soft);font-size:15px}
-.why h4{margin:0 0 6px;font-size:15px;color:var(--sea)}
-.why p{margin:0 0 6px}.why p:last-child{margin:0}
-
-footer{padding:40px 0 60px;color:var(--muted);font-size:14px}
-footer p{margin:4px 0}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.vseg { display: none; gap: var(--s-2); }
+.vseg .tab[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.qpick { display: none; padding: 0 var(--s-4) var(--s-4); }
+.qpick select { width: 100%; height: 48px; padding: 0 var(--s-3); border-radius: var(--r-sm); border: 1px solid var(--line-strong); background: var(--p-bg); color: var(--ink); font: 16px var(--font-text); }
+.toolbar { flex-wrap: wrap; }
+.rec, .trel { display: none; }
+.trel { margin-top: var(--s-5); }
+.trel__row { display: grid; gap: 2px; margin: 0; padding: var(--s-3) 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.trel__row .mono { font-size: 13px; color: var(--sea-1); }
+.trel__row .muted { font-size: 14px; }
+.rec__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin-bottom: var(--s-3); }
+.rec__bar .btn { width: 48px; padding: 0; justify-content: center; }
+.rec__pos { font-size: 15px; }
+.rec__dl { margin: 0; display: grid; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--p-bg); }
+.rec__dl > div { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: var(--s-3); padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.rec__dl > div:last-child { border-bottom: 0; }
+.rec__dl dt { font: 13px var(--font-mono); color: var(--muted); }
+.rec__dl dd { margin: 0; font-size: 15px; overflow-wrap: anywhere; }
+/* --- widths --- */
+@media (max-width: 1279px) {
+  .app { grid-template-columns: 260px minmax(0, 1fr); }
+  .app__main { padding: var(--s-5); }
+}
+@media (max-width: 1023px) {
+  .erd--wide { display: none; } .erd--mid { display: block; max-width: 560px; margin-inline: auto; }
+  .roles { grid-template-columns: 1fr 1fr; }
+  .rules { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rule { min-height: 0; }
+  .tpanel__dict, .tpanel__rows { grid-column: 1 / -1; }
+  .tpanel__rows { margin-top: var(--s-6); }
+  .tpanel .dt-scroll { height: 300px; }
+  .app { grid-template-columns: minmax(0, 1fr); height: auto; }
+  .app__side { border-right: 0; border-bottom: 1px solid var(--line); grid-template-rows: auto auto auto; }
+  .qlist { grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
+  .results { grid-template-columns: minmax(0, 1fr); }
+  .res .dt-scroll { max-height: 360px; }
+  .notes { grid-template-columns: minmax(0, 1fr); }
+  .cmp { height: auto; }
+  .var { padding: var(--s-4); }
+  .var .out { max-height: 260px; }
+  .tpanel .dt-scroll { height: 200px; }
+  .res .dt-scroll, .res__body { max-height: 260px; overflow: auto; }
+}
+@media (max-width: 639px) {
+  #case, #rules, #schema, #tables, #query, #compare { --hm: 2; }
+  .hub { display: none; }
+  .rule { padding: var(--s-4) var(--s-5); gap: var(--s-2); }
+  .rule__code { min-height: 0; padding: var(--s-2) var(--s-3); }
+  .rules { gap: var(--s-3); }
+  .kbd { display: none; }
+  #query .editor textarea { max-height: 264px; overflow-y: auto; }
+  .res .dt-scroll, .res__body { max-height: 220px; }
+  .app__main { gap: var(--s-3); padding: var(--s-3); }
+  .app__title { font-size: 22px; }
+  .qpick { padding: 0 var(--s-3) var(--s-3); }
+  .app__engine { padding: var(--s-3) var(--s-4); }
+  .note { padding: var(--s-3) var(--s-4); }
+  .vseg { display: flex; }
+  .vars { display: grid; grid-auto-flow: row; }
+  .vars > .var { grid-area: 1 / 1; }
+  .vars > .var:not(.is-shown) { visibility: hidden; }
+  .qlist { display: none !important; }
+  .qpick { display: block; }
+  .app__sidehead { display: none; }
+  .role__q { min-height: 44px; }
+  .tpanel__rows .dt-scroll { display: none; }
+  .rec, .trel { display: block; }
+  .rec__dl > div { padding: 12px; }
+  .tpanel .tpanel__dict .dt-scroll { height: auto; }
+  .dict td:last-child { min-width: 0; }
+  .dt th, .dt td { padding: 7px 6px; font-size: 13px; }
+  .res table.dt, .var table.dt { table-layout: fixed; }
+  .res .dt td, .var .dt td { white-space: normal; overflow-wrap: anywhere; }
+  .roles, .rules { grid-template-columns: minmax(0, 1fr); }
+  .hw__side, .hw__code { display: none !important; }
+  .hw__body { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .hw tbody tr:nth-child(n+3) { display: none; }
+  .role, .rule { padding: var(--s-5); }
+  .erd-frame { padding: var(--s-4); }
+  .erd--mid { display: none !important; } .erd--tall { display: block; }
+  .qlist { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .qbtn__m { display: none; }
+  .app__main { padding: var(--s-4); gap: var(--s-4); }
+  .app__title { font-size: 24px; }
+  .editor pre, .editor textarea { font-size: 13px; padding: var(--s-3); }
+  .vars { grid-auto-flow: row; grid-auto-columns: auto; }
+}
 </style>
 </head>
 <body>
-
+<!-- type: software (an interactive SQL practice tool for a database course)
+     deal: hero collage, nav nav-mega, close close-type, footer footer-dark, rhythm surface-pairs (#tables and #query on
+     .ground-surface), buttons tonal, mark dots, ground sky (the hero's lit frame, in the client's seafoam)
+     palette: the client's own five swatches (start.mjs brand): sand ground, deep-sea ink, ocean blue action.
+     moments: none (the installed kit has no assets/moments folder; reported); effect: none; scene: none -->
 <header class="nav">
-  <div class="wrap">
-    <a class="brand" href="#top">澄海<span>渡假村</span></a>
-    <nav aria-label="章節">
-      <a href="#case">1 案例背景</a><a href="#design">2 資料庫設計</a><a href="#query">3 查詢操作</a><a href="#compare">4 結果比較</a>
+  <div class="wrap nav__bar">
+    <a class="skip-link" href="#top">跳到主要內容</a>
+    <a class="nav__logo" href="#top"><span class="mark" data-mark="dots" aria-hidden="true"></span>澄海渡假村</a>
+    <nav class="nav__links" aria-label="主選單">
+      <div class="nav__item"><a class="nav__link" href="#case">背景</a></div>
+      <div class="nav__item"><a class="nav__link" href="#schema">設計</a></div>
+      <div class="nav__item"><a class="nav__link" href="#tables">資料</a></div>
+      <div class="nav__item">
+        <a class="nav__link" href="#query">查詢 <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <div class="nav__menu">
+          <div class="wrap grid" id="navMenu"></div>
+        </div>
+      </div>
+      <div class="nav__item"><a class="nav__link" href="#compare">比較</a></div>
     </nav>
-    <div class="status" id="status" role="status"><i></i><b>SQLite</b><span>載入中…</span></div>
+    <div class="nav__actions">
+      <a class="btn btn--primary" href="#query">開始查詢</a>
+    </div>
+    <button class="nav__toggle" type="button" aria-expanded="false" aria-label="選單">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
   </div>
 </header>
 
-<div class="hero" id="top">
-  <svg class="waves" viewBox="0 0 520 160" aria-hidden="true">
-    <path d="M0 40 Q 32 20 65 40 T 130 40 T 195 40 T 260 40 T 325 40 T 390 40 T 455 40 T 520 40"/>
-    <path d="M0 80 Q 32 60 65 80 T 130 80 T 195 80 T 260 80 T 325 80 T 390 80 T 455 80 T 520 80" opacity=".6"/>
-    <path d="M0 120 Q 32 100 65 120 T 130 120 T 195 120 T 260 120 T 325 120 T 390 120 T 455 120 T 520 120" opacity=".3"/>
-  </svg>
-  <div class="wrap">
-    <div class="eyebrow">DATABASE · SQL QUERY PRACTICE</div>
-    <h1>澄海渡假村<br>訂房與設施資料庫</h1>
-    <p class="lead">一間虛構的海濱渡假村，用關聯式資料庫管理客房、訂單與設施預約。所有 SQL 都在你的瀏覽器裡以 SQLite 執行，可以直接修改、執行、看結果或錯誤訊息。</p>
-    <div class="stats" id="stats"></div>
-  </div>
-</div>
-
-<main>
-<!-- 1 -->
-<section class="sec" id="case">
-  <div class="wrap">
-    <div class="sec-head"><span class="sec-num">1</span><h2>案例背景</h2></div>
-    <p class="sec-sub">這個資料庫給誰用？要解決什麼問題？</p>
-
-    <div class="card story">
-      <p>澄海渡假村位於恆春半島海邊（虛構），共有 <b>12 間客房</b>，分成標準雙人房、豪華海景房、家庭四人房與私人泳池別墅四種房型，另外提供 SPA、浮潛、立槳、海灘燒烤與親子課程等設施。</p>
-      <p>過去訂房靠紙本登記加上 Excel，常出包：<b>同一間房在聖誕節被重複賣出</b>、<b>取消的訂單被算進營收</b>、經理不知道哪間房一直空著、行銷也說不出誰是高消費旅客。因此改用關聯式資料庫，把「旅客、客房、訂單、設施」拆成彼此關聯的資料表，讓每個部門都能用 SQL 找到答案。</p>
-    </div>
-
-    <h3 class="sub">使用者</h3>
-    <div class="grid-4">
-      <div class="card who"><div class="role"><em>🛎️</em>櫃檯人員</div><ul><li>查某段日期還有哪些空房</li><li>依旅客需求找房（海景、人數）</li></ul></div>
-      <div class="card who"><div class="role"><em>📊</em>營運經理</div><ul><li>各房型營收與住房晚數</li><li>找出閒置、乏人問津的房間</li><li>設施熱門排行</li></ul></div>
-      <div class="card who"><div class="role"><em>🧾</em>財務</div><ul><li>每筆訂單的房費結算</li><li>排除取消單、找出高額訂單</li></ul></div>
-      <div class="card who"><div class="role"><em>💌</em>行銷</div><ul><li>各會員等級的貢獻</li><li>設施消費大戶，安排回饋</li></ul></div>
-    </div>
-
-    <h3 class="sub">要解決的問題 → 對應查詢</h3>
-    <div class="pain" id="painList"></div>
-
-    <h3 class="sub">設計時的商業規則</h3>
-    <ol class="rules">
-      <li class="card"><b>房型資訊只存一次</b><span>名稱、人數、定價放在 <code>room_type</code>，每間 <code>room</code> 只記 <code>type_id</code>，調價只要改一列（正規化，避免重複與不一致）。</span></li>
-      <li class="card"><b>訂單保存「成交價」</b><span><code>booking.price_per_night</code> 是訂房當下的價格，與定價 <code>base_price</code> 分開；有 VIP 折扣、聖誕加價，日後調價也不影響舊訂單。</span></li>
-      <li class="card"><b>取消不刪除</b><span>取消的訂單改 <code>status = '已取消'</code> 保留紀錄，所以統計營收、查空房時都要記得排除。</span></li>
-      <li class="card"><b>住宿區間是 [入住, 退房)</b><span>退房日當天可以讓下一位旅客入住，兩筆訂單「重疊」的判斷要用 &lt; 與 &gt;。</span></li>
-      <li class="card"><b>設施使用掛在訂單下</b><span><code>facility_order</code> 參照 <code>booking</code> 而非 <code>guest</code>，才知道是哪一次住宿的消費，也能跟房費一起結帳。</span></li>
-      <li class="card"><b>NULL 代表非會員</b><span><code>guest.member_level</code> 允許 NULL；查詢時要用 <code>IS NULL</code> 或 <code>COALESCE</code> 處理。</span></li>
-    </ol>
-  </div>
-</section>
-
-<!-- 2 -->
-<section class="sec" id="design">
-  <div class="wrap">
-    <div class="sec-head"><span class="sec-num">2</span><h2>資料庫設計</h2></div>
-    <p class="sec-sub">6 張資料表、5 個一對多關聯。點選下方資料表可在 ERD 中標示它與相鄰的表。</p>
-
-    <div class="card erd-wrap">
-      <!--__ERD__-->
-      <div class="legend">
-        <span><b class="pk">PK</b> 主鍵（底線）</span><span><b class="fk">FK</b> 外來鍵</span><span><b>UQ</b> 唯一值</span>
-        <span>線條：三叉端 = 多（N），雙橫線端 = 一（1）</span>
+<main id="top">
+  <section class="hero hero--collage" data-enter aria-labelledby="hero-h">
+    <div class="wrap"><div class="hero-text grid hero__grid">
+      <div class="hero__text span-5">
+        <h1 id="hero-h">渡假村訂房資料庫的 SQL 練習台</h1>
+        <p class="hero__lead">12 間房的虛構渡假村，6 張表、67 筆資料、9 個查詢。改一行 SQL 按執行，立刻看到結果或錯誤。</p>
+        <div class="btn-row"><a class="btn btn--primary" href="#query">開始查詢<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a><a class="btn btn--secondary" href="#schema">看資料表設計</a></div>
+        <p class="hero__proof">SQLite 在瀏覽器裡執行，不需要伺服器。</p>
       </div>
-    </div>
-    <div class="rels" id="rels"></div>
-
-    <h3 class="sub">欄位說明與樣本資料</h3>
-    <div class="tabs" role="tablist" id="ttabs"></div>
-    <div class="card tpanel" id="tpanel"></div>
-
-    <details class="ddl"><summary>顯示完整的 CREATE TABLE 與 INSERT 指令</summary><pre class="code" id="ddl"></pre></details>
-  </div>
-</section>
-
-<!-- 3 -->
-<section class="sec" id="query">
-  <div class="wrap">
-    <div class="sec-head"><span class="sec-num">3</span><h2>查詢操作</h2></div>
-    <p class="sec-sub">選一個問題，閱讀 SQL 與預期結果，然後自由修改、按「執行」看實際結果或錯誤訊息。每次執行都會從原始樣本資料重建資料庫，就算下了 <code>DELETE</code> 或 <code>UPDATE</code> 也不會弄壞其他題目。</p>
-    <div class="ws">
-      <div class="qlist" id="qlist" role="list"></div>
-      <div class="card qmain" id="qmain">
-        <div class="qtop"><span class="pill role" id="qWho"></span><span class="pill" id="qTopic"></span></div>
-        <h3 id="qTitle"></h3>
-        <p class="qq" id="qQuestion"></p>
-        <div class="editor" id="qEditor"></div>
-        <div class="toolbar">
-          <button class="btn primary" id="qRun" disabled>▶ 執行</button>
-          <button class="btn" id="qReset">↺ 還原原範例</button>
-          <span class="hint"><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd> 執行</span>
+      <div class="hero__art span-6 start-7" role="img" aria-label="查詢 12 月 24 日到 26 日的空房：SQL 與 7 間可訂客房的結果">
+        <div class="ly-piece ly-piece--main hw" aria-hidden="true">
+          <div class="hw__bar"><span class="hw__dots"><i></i><i></i><i></i></span>{{brand:sqlite}}<span class="mono">resort.db · Q7 聖誕節還有空房嗎</span></div>
+          <div class="hw__body">
+            <div class="hw__side">
+              <b>資料表</b>
+              <span>{{ic:table-2}}room_type</span><span class="is-on">{{ic:table-2}}room</span><span>{{ic:table-2}}guest</span><span class="is-on">{{ic:table-2}}booking</span><span>{{ic:table-2}}facility</span><span>{{ic:table-2}}facility_order</span>
+            </div>
+            <div class="hw__main">
+<pre class="hw__code"><span class="tk-kw">SELECT</span> r.room_no, t.type_name, r.view
+<span class="tk-kw">FROM</span> room r <span class="tk-kw">JOIN</span> room_type t
+  <span class="tk-kw">ON</span> t.type_id = r.type_id
+<span class="tk-kw">WHERE</span> r.status = <span class="tk-str">'可使用'</span>
+  <span class="tk-kw">AND NOT EXISTS</span> (
+    <span class="tk-kw">SELECT</span> <span class="tk-num">1</span> <span class="tk-kw">FROM</span> booking b
+    <span class="tk-kw">WHERE</span> b.room_no = r.room_no
+      <span class="tk-kw">AND</span> b.check_in  &lt; <span class="tk-str">'2026-12-26'</span>
+      <span class="tk-kw">AND</span> b.check_out &gt; <span class="tk-str">'2026-12-24'</span>)</pre>
+              <div class="hw__run"><span class="hw__btn">{{ic:play}}執行</span><span>7 列 · 0.4 ms</span></div>
+              <table>
+                <thead><tr><th>room_no</th><th>type_name</th><th>view</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono">101</td><td>標準雙人房</td><td><span class="chip chip--sand">花園</span></td></tr>
+                  <tr><td class="mono">102</td><td>標準雙人房</td><td><span class="chip chip--sand">花園</span></td></tr>
+                  <tr><td class="mono">202</td><td>豪華海景房</td><td><span class="chip chip--sea">海景</span></td></tr>
+                  <tr><td class="mono">301</td><td>家庭四人房</td><td><span class="chip chip--sea">海景</span></td></tr>
+                  <tr><td class="mono">303</td><td>家庭四人房</td><td><span class="chip chip--sand">花園</span></td></tr>
+                  <tr><td class="mono">V02</td><td>私人泳池別墅</td><td><span class="chip chip--sea">海景</span></td></tr>
+                  <tr><td class="mono">V03</td><td>私人泳池別墅</td><td><span class="chip chip--sand">花園</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <p class="uses" id="qUses"></p>
-        <div class="tip" id="qTry"></div>
-        <details class="ex"><summary>這段 SQL 在做什麼？</summary><p id="qExplain"></p></details>
-        <div class="results">
-          <div><div class="rhead"><h4>預期結果</h4><span class="meta" id="qExpMeta"></span></div><div id="qExpected"></div></div>
-          <div><div class="rhead"><h4>實際結果</h4><span id="qBadge"></span></div><div id="qActual"><div class="empty">尚未執行。修改上方 SQL 後按「▶ 執行」。</div></div></div>
+        <div class="ly-piece hw-card" aria-hidden="true">
+          <div class="hw-card__row"><p class="hw-card__t">12/24 入住 · 12/26 退房</p><span class="chip chip--teal">完成</span></div>
+          <p>{{ic:triangle-alert}}<span>203 維修中，先排除</span></p>
+          <p>{{ic:circle-check}}<span>4 間有重疊的有效訂單</span></p>
+          <p>{{ic:circle-check}}<span>可訂 7 間，最低每晚 3,800 元</span></p>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <section class="section" id="case" aria-labelledby="case-h">
+    <div class="wrap">
+      <div class="group">
+        <div class="section-head">
+          <h2 id="case-h">一間渡假村，四個部門要答案</h2>
+        </div>
+        <div class="grid grid--top">
+          <div class="story span-5">
+            <p>澄海渡假村在恆春半島的海邊（虛構），有四種房型與 SPA、浮潛、海灘燒烤等設施。以前靠紙本和 Excel，聖誕節同一間房賣了兩次，取消單也被算進營收。</p>
+            <p>改用關聯式資料庫後，旅客、客房、訂單和設施各一張表、以外來鍵相連，每個部門都能用 SQL 自己查。卡片上的編號會打開對應的查詢。</p>
+            <svg class="hub" viewBox="0 0 519 216" preserveAspectRatio="xMidYMid meet" role="img" aria-label="四個部門都從同一個 resort.db 資料庫查資料：櫃檯、營運經理、財務、行銷">
+              <g class="hub__lines"><path d="M130 48C200 48 200 108 220 108"/><path d="M130 168C200 168 200 108 220 108"/><path d="M389 48C319 48 319 108 299 108"/><path d="M389 168C319 168 319 108 299 108"/></g>
+              <circle class="hub__core" cx="259.5" cy="108" r="40"/>
+              <g transform="translate(247.5 80)"><path fill="#003B57" d="{{si:sqlite}}"/></g>
+              <text class="hub__db" x="259.5" y="126" text-anchor="middle">resort.db</text>
+              <g class="hub__node"><rect x="0" y="28" width="130" height="40" rx="20"/><text x="65" y="53" text-anchor="middle">櫃檯</text></g>
+              <g class="hub__node"><rect x="0" y="148" width="130" height="40" rx="20"/><text x="65" y="173" text-anchor="middle">財務</text></g>
+              <g class="hub__node"><rect x="389" y="28" width="130" height="40" rx="20"/><text x="454" y="53" text-anchor="middle">營運經理</text></g>
+              <g class="hub__node"><rect x="389" y="148" width="130" height="40" rx="20"/><text x="454" y="173" text-anchor="middle">行銷</text></g>
+            </svg>
+          </div>
+          <div class="roles span-6 start-7" id="roles"></div>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- 4 -->
-<section class="sec" id="compare">
-  <div class="wrap">
-    <div class="sec-head"><span class="sec-num">4</span><h2>結果比較</h2></div>
-    <p class="sec-sub">同一個問題，只改一小段 SQL，結果就可能差很多。每個版本都可以直接修改並重新執行；<span style="background:var(--bad-soft);padding:0 4px;border-radius:4px">紅底</span>的列代表「正確版本裡沒有的列」。</p>
-    <div id="cmpList"></div>
-  </div>
-</section>
+  <section class="section" id="rules" aria-labelledby="rules-h">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="rules-h">設計時定下的六條規則</h2>
+      </div>
+        <ol class="rules">
+          <li class="rule"><h3 class="rule__h">{{ic:layers}}<span>房型資訊只存一次</span></h3><p>名稱、人數與定價只放在 room_type，客房只記 type_id。調價改一列，不會前後不一致。</p><div class="rule__code ui ui-code" data-hl>room.type_id
+  → room_type.type_id</div></li>
+          <li class="rule"><h3 class="rule__h">{{ic:badge-dollar-sign}}<span>訂單保存成交價</span></h3><p>price_per_night 是訂房當下的價格，和定價分開，折扣與聖誕加價都留得住。</p><div class="rule__code ui ui-code" data-hl>price_per_night
+  * 晚數 AS 房費</div></li>
+          <li class="rule"><h3 class="rule__h">{{ic:ban}}<span>取消不刪除</span></h3><p>取消的訂單改狀態保留紀錄，統計營收和查空房時都要記得排除。</p><div class="rule__code ui ui-code" data-hl>WHERE status
+  &lt;&gt; &#x27;已取消&#x27;</div></li>
+          <li class="rule"><h3 class="rule__h">{{ic:calendar-range}}<span>住宿區間是 [入住, 退房)</span></h3><p>退房那天下一位就能入住，判斷兩筆訂單重疊要用 &lt; 與 &gt;，不能用 BETWEEN。</p><div class="rule__code ui ui-code" data-hl>b.check_in  &lt; &#x27;退房日&#x27;
+AND b.check_out &gt; &#x27;入住日&#x27;</div></li>
+          <li class="rule"><h3 class="rule__h">{{ic:receipt-text}}<span>設施消費掛在訂單下</span></h3><p>facility_order 參照訂單而不是旅客，才知道是哪一次住宿花的錢，也能和房費一起結帳。</p><div class="rule__code ui ui-code" data-hl>facility_order.booking_id
+  → booking.booking_id</div></li>
+          <li class="rule"><h3 class="rule__h">{{ic:circle-dashed}}<span>NULL 代表非會員</span></h3><p>member_level 可以是 NULL，查詢時要用 IS NULL 或 COALESCE 處理，不能只寫 &lt;&gt;。</p><div class="rule__code ui ui-code" data-hl>COALESCE(member_level,
+         &#x27;非會員&#x27;)</div></li>
+        </ol>
+    </div>
+  </section>
+
+  <section class="section" id="schema" aria-labelledby="schema-h">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="schema-h">6 張資料表，5 個一對多關聯</h2>
+      </div>
+      <div class="erd-frame">
+        <!--__ERD__-->
+        <!--__ERD_M__-->
+      </div>
+      <div class="erd-legend">
+        <span class="lg lg--pk">主鍵（加底線）</span>
+        <span class="lg lg--fk">外來鍵</span>
+        <span class="lg lg--uq">不可重複</span>
+        <span>三叉端是「多」，雙橫線端是「一」</span>
+        <span>點一張表，看它的欄位和資料</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section ground-surface" id="tables" aria-labelledby="tables-h">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="tables-h">欄位說明與樣本資料</h2>
+      </div>
+      <div class="tabs" role="tablist" aria-label="資料表" id="ttabs"></div>
+      <div id="tpanels"></div>
+    </div>
+  </section>
+
+  <section class="section ground-surface" id="query" style="--h: 2" aria-labelledby="query-h">
+    <div class="wrap">
+      <div class="grid grid--top section-head--app">
+        <h2 id="query-h" class="span-5">查詢操作：9 個問題，改了就能跑。</h2>
+        <p class="span-6 start-7 t-lead">每題有 SQL 和預期結果。修改後按執行，就會看到 SQLite 的實際結果或錯誤原因；每次執行都從原始樣本重建資料庫，下了 <code class="k">DELETE</code> 也不怕。</p>
+      </div>
+      <div class="app ui ui-app" id="app" data-visual>
+        <aside class="app__side" aria-label="查詢清單">
+          <div class="app__sidehead"><span>查詢</span><span class="mono">9</span></div>
+          <div class="qlist" id="qlist"></div>
+          <div class="qpick"><label class="lbl" for="qPick">選擇查詢</label><select id="qPick"></select></div>
+          <div class="app__engine" id="engine" role="status"><span class="dot"></span><span>SQLite 載入中</span></div>
+        </aside>
+        <div class="app__main">
+          <div>
+            <div class="app__meta"><span class="chip chip--teal" id="qWho"></span><span class="chip chip--sand mono" id="qTopic"></span></div>
+            <p class="app__title" id="qTitle"></p>
+            <p class="app__q" id="qQuestion"></p>
+          </div>
+          <div class="ed-wrap"><label class="lbl" for="qSql">SQL</label><div class="editor" id="qEditor"></div></div>
+          <div class="toolbar">
+            <button class="btn btn--primary" id="qRun" type="button" disabled>{{ic:play}}執行查詢</button>
+            <button class="btn btn--secondary" id="qReset" type="button">{{ic:rotate-ccw}}還原範例</button>
+            <span class="kbd">Ctrl / Cmd + Enter</span>
+          </div>
+          <div class="notes">
+            <p class="note">{{ic:lightbulb}}<span><b>試著改：</b><span id="qTry"></span></span></p>
+            <p class="note">{{ic:info}}<span id="qExplain"></span></p>
+          </div>
+          <div class="results">
+            <div class="res"><div class="res__head"><p class="lbl">預期結果</p><span class="res__meta" id="qExpMeta"></span></div><div class="dt-scroll ui ui-result" id="qExpected"></div></div>
+            <div class="res"><div class="res__head"><p class="lbl">實際結果</p><span class="res__meta" id="qBadge"></span></div><div id="qActual" class="res__body ui ui-result"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="compare" style="--h: 2" aria-labelledby="compare-h">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="compare-h">結果比較：同一個問題，只改一小段 SQL。<span class="muted">紅底的列是正確版本裡沒有的列。</span></h2>
+      </div>
+      <div class="tabs" role="tablist" aria-label="比較" id="ctabs"></div>
+      <div id="cpanels"></div>
+    </div>
+  </section>
 </main>
 
-<footer>
+<footer class="footer closing footer--dark ground-inverse" id="contact" aria-labelledby="close-h">
   <div class="wrap">
-    <p>資料為虛構，僅供課程練習。查詢引擎：<a href="https://github.com/sql-js/sql.js">sql.js</a>（SQLite 編譯為 WebAssembly，MIT 授權），全部在瀏覽器端執行，不需伺服器。</p>
-    <p id="author">製作：（請在 index.html 搜尋「製作：」填上姓名與學號）</p>
+    <div class="closing__cta close--type">
+      <div class="section-head">
+        <h2 id="close-h">改一行 SQL，看結果怎麼變</h2>
+        <p>每次執行都從原始樣本重建資料庫，改壞了按一下還原就好。</p>
+      </div>
+      <a class="btn btn--primary btn--xl btn--wide" href="#query">開始查詢<svg class="m-arrow" viewBox="0 0 12 12" aria-hidden="true"><path class="m-arrow__stem" d="M1 6h8"/><path class="m-arrow__head" d="M4.5 2.5 8 6l-3.5 3.5"/></svg></a>
+    </div>
+    <div class="closing__links">
+      <div class="grid">
+        <div class="span-4 stack-4">
+          <a class="nav__logo" href="#top"><span class="mark" data-mark="dots" aria-hidden="true"></span>澄海渡假村</a>
+          <p class="footer__lede" id="author">資料庫系統課程作業：渡假村訂房與設施資料庫的 SQL 查詢練習。</p>
+        </div>
+        <div class="span-2 footer__col"><h3>案例</h3><ul><li><a href="#case">案例背景</a></li><li><a href="#case">商業規則</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>設計</h3><ul><li><a href="#schema">ERD</a></li><li><a href="#tables">欄位與資料</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>練習</h3><ul><li><a href="#query">查詢操作</a></li><li><a href="#compare">結果比較</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>原始碼</h3><ul><li><a class="gh" href="https://github.com/WlsETD/SQL-SEARCH">{{brand:github}}GitHub 儲存庫</a></li><li><a href="https://github.com/WlsETD/SQL-SEARCH#readme">README</a></li></ul></div>
+      </div>
+      <div class="footer__legal">
+        <span>&copy; 2026 澄海渡假村（虛構案例）· 資料皆為虛構</span>
+        <span>查詢引擎 sql.js（MIT 授權）· SQLite 與 GitHub 的名稱和標誌屬於其所有者</span>
+      </div>
+    </div>
   </div>
 </footer>
 
-<script src="lib/sql-wasm.js"></script>
 <script>
 const DATA = /*__DATA__*/null;
 const $ = s => document.querySelector(s);
-const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const IC = n => DATA.icons[n];
 const TABLE_NAMES = DATA.tables.map(t => t.name);
 
-/* ---------- SQL 語法上色 ---------- */
-const KW = new Set('SELECT FROM WHERE AND OR NOT IN IS NULL AS JOIN LEFT RIGHT INNER OUTER FULL CROSS ON GROUP BY ORDER HAVING LIMIT OFFSET DISTINCT CASE WHEN THEN ELSE END ASC DESC EXISTS BETWEEN LIKE UNION ALL INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE PRIMARY KEY REFERENCES CHECK DEFAULT UNIQUE INTEGER TEXT REAL OVER PARTITION WITH PRAGMA DROP ALTER ADD VIEW INDEX'.split(' '));
+/* SQL highlight */
+const KW = new Set('SELECT FROM WHERE AND OR NOT IN IS NULL AS JOIN LEFT RIGHT INNER OUTER FULL CROSS ON USING GROUP BY ORDER HAVING LIMIT OFFSET DISTINCT CASE WHEN THEN ELSE END ASC DESC EXISTS BETWEEN LIKE UNION ALL INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE PRIMARY KEY REFERENCES CHECK DEFAULT UNIQUE INTEGER TEXT REAL OVER PARTITION WITH PRAGMA DROP ALTER ADD VIEW INDEX'.split(' '));
 const FN = new Set('COUNT SUM AVG MIN MAX COALESCE IFNULL JULIANDAY DATE STRFTIME CAST ROUND RANK ROW_NUMBER DENSE_RANK LENGTH UPPER LOWER SUBSTR NULLIF'.split(' '));
-function highlight(sql){
-  return sql.replace(/(--[^\n]*)|('(?:[^']|'')*'?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)|([^\-'A-Za-z0-9_]+|-)/g,(m,cm,str,num,word,other)=>{
-    if(cm) return `<span class="tk-cm">${esc(cm)}</span>`;
-    if(str) return `<span class="tk-str">${esc(str)}</span>`;
-    if(num) return `<span class="tk-num">${num}</span>`;
-    if(word){const u=word.toUpperCase(); if(KW.has(u)) return `<span class="tk-kw">${word}</span>`; if(FN.has(u)) return `<span class="tk-fn">${word}</span>`; return esc(word);}
-    return esc(other);
+function highlight(sql) {
+  return sql.replace(/(--[^\n]*)|('(?:[^']|'')*'?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z0-9_]*)|([^\-'A-Za-z0-9_]+|-)/g, (m, cm, str, num, w, o) => {
+    if (cm) return `<span class="tk-cm">${esc(cm)}</span>`;
+    if (str) return `<span class="tk-str">${esc(str)}</span>`;
+    if (num) return `<span class="tk-num">${num}</span>`;
+    if (w) { const u = w.toUpperCase(); if (KW.has(u)) return `<span class="tk-kw">${w}</span>`; if (FN.has(u)) return `<span class="tk-fn">${w}</span>`; return esc(w); }
+    return esc(o);
   });
 }
-
-/* ---------- 編輯器 ---------- */
-function makeEditor(host, initial, onRun){
-  host.innerHTML = '<pre aria-hidden="true"><code></code></pre><textarea spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="SQL 編輯器"></textarea>';
+function makeEditor(host, initial, onRun, id) {
+  host.innerHTML = `<pre aria-hidden="true"><code></code></pre><textarea id="${id}" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>`;
   const ta = host.querySelector('textarea'), code = host.querySelector('code'), pre = host.querySelector('pre');
   const paint = () => { code.innerHTML = highlight(ta.value) + '\n'; ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
   ta.addEventListener('input', paint);
-  ta.addEventListener('scroll', () => { pre.scrollLeft = ta.scrollLeft; });
+  ta.addEventListener('scroll', () => { pre.scrollLeft = ta.scrollLeft; pre.scrollTop = ta.scrollTop; });
   ta.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); onRun(); }
-    else if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); document.execCommand('insertText', false, '  '); }
+    else if (e.key === 'Tab' && !e.shiftKey && !e.ctrlKey) { e.preventDefault(); document.execCommand('insertText', false, '  '); }
   });
-  const api = { get value(){ return ta.value; }, set value(v){ ta.value = v; paint(); pre.scrollLeft = 0; ta.scrollLeft = 0; } };
+  const api = { get value() { return ta.value; }, set value(v) { ta.value = v; paint(); pre.scrollLeft = ta.scrollLeft = 0; } };
   api.value = initial;
-  new ResizeObserver(paint).observe(host);
+  if ('ResizeObserver' in window) new ResizeObserver(paint).observe(host);
   return api;
 }
-
-/* ---------- 結果表 ---------- */
-function renderTable(cols, rows, extraKeys){
-  if (!cols.length) return '<div class="empty">查詢成功，但沒有回傳任何欄位。</div>';
-  if (!rows.length) return `<div class="tbl-scroll"><table class="t"><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead></table></div><div class="empty" style="margin-top:8px">0 列：沒有符合條件的資料。</div>`;
-  const body = rows.map(r => {
-    const cls = extraKeys && extraKeys.has(JSON.stringify(r)) ? ' class="extra"' : '';
-    return `<tr${cls}>` + r.map(v => v === null ? '<td><span class="null">NULL</span></td>' : typeof v === 'number' ? `<td class="n">${Number.isInteger(v) ? v : +v.toFixed(4)}</td>` : `<td>${esc(v)}</td>`).join('') + '</tr>';
-  }).join('');
-  return `<div class="tbl-scroll"><table class="t"><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
+function cell(v) {
+  if (v === null) return '<td><span class="null">NULL</span></td>';
+  if (typeof v === 'number') return `<td class="n">${Number.isInteger(v) ? v : +v.toFixed(4)}</td>`;
+  return `<td>${esc(v)}</td>`;
+}
+function table(cols, rows, extra, cls = 'dt') {
+  const head = `<thead><tr>${cols.map(c => `<th scope="col">${esc(c).replace(/_/g, '_<wbr>')}</th>`).join('')}</tr></thead>`;
+  if (!rows.length) return `<table class="${cls}">${head}</table><div class="empty">${IC('info')}<span>0 列：沒有符合條件的資料。</span></div>`;
+  return `<table class="${cls}">${head}<tbody>${rows.map(r => `<tr${extra && extra.has(JSON.stringify(r)) ? ' class="extra"' : ''}>${r.map(cell).join('')}</tr>`).join('')}</tbody></table>`;
 }
 
-/* ---------- SQLite ---------- */
+/* SQLite */
 let SQL = null;
-function runSQL(sql){
-  const db = new SQL.Database();
-  db.exec(DATA.seed);
+function runSQL(sql) {
+  const db = new SQL.Database(); db.exec(DATA.seed);
   const t0 = performance.now();
-  try {
-    const sets = db.exec(sql);
-    return { sets, ms: performance.now() - t0, modified: db.getRowsModified() };
-  } catch (e) { return { error: e.message }; }
-  finally { db.close(); }
+  try { const sets = db.exec(sql); return { sets, ms: performance.now() - t0, modified: db.getRowsModified() }; }
+  catch (e) { return { error: e.message }; } finally { db.close(); }
 }
-function translateError(msg){
+function why(msg) {
   const tips = [
-    [/no such table: (\S+)/, m => `找不到資料表 ${m[1]}，請確認表名拼字（可用的表：${TABLE_NAMES.join('、')}）。`],
-    [/no such column: (\S+)/, m => `找不到欄位 ${m[1]}，請確認欄位名稱，或是否忘了 JOIN 那張表／別名寫錯。`],
-    [/misuse of aggregate/, () => '聚合函數（SUM、COUNT…）不能出現在 WHERE，分組後的條件請改用 HAVING。'],
-    [/ambiguous column name: (\S+)/, m => `欄位 ${m[1]} 同時存在於多張表，請加上表名或別名，例如 b.${m[1]}。`],
-    [/syntax error/, () => '語法錯誤：檢查附近是否少了逗號、括號、引號，或關鍵字拼錯。'],
+    [/no such table: (\S+)/, m => `找不到資料表 ${m[1]}。可用的表：${TABLE_NAMES.join('、')}。`],
+    [/no such column: (\S+)/, m => `找不到欄位 ${m[1]}：檢查拼字，或是否忘了 JOIN 那張表、別名寫錯。`],
+    [/misuse of aggregate/, () => 'SUM、COUNT 這類聚合函數不能放在 WHERE；分組後的條件請改用 HAVING。'],
+    [/ambiguous column name: (\S+)/, m => `欄位 ${m[1]} 同時在多張表裡，請加上表名或別名，例如 b.${m[1]}。`],
     [/incomplete input/, () => 'SQL 不完整：可能少了右括號或結尾的引號。'],
-    [/FOREIGN KEY constraint failed/, () => '違反外來鍵：參照的資料不存在（例如不存在的 guest_id）。'],
-    [/UNIQUE constraint failed|PRIMARY KEY/, () => '違反唯一／主鍵限制：這個值已經存在。'],
-    [/CHECK constraint failed/, () => '違反 CHECK 限制：值不符合欄位規則（例如退房日早於入住日）。'],
+    [/syntax error/, () => '語法錯誤：檢查附近是否少了逗號、括號、引號，或關鍵字拼錯。'],
+    [/FOREIGN KEY constraint failed/, () => '違反外來鍵：參照的資料不存在。'],
+    [/UNIQUE constraint failed|PRIMARY KEY/, () => '違反唯一或主鍵限制：這個值已經存在。'],
+    [/CHECK constraint failed/, () => '違反 CHECK 限制：值不符合欄位規則，例如退房日早於入住日。'],
     [/NOT NULL constraint failed/, () => '這個欄位不可為 NULL。'],
   ];
   for (const [re, f] of tips) { const m = msg.match(re); if (m) return f(m); }
   return '';
 }
-function renderRun(res, extraKeys){
+const lastSet = r => r.sets && r.sets.length ? r.sets[r.sets.length - 1] : null;
+function renderRun(res, extra) {
   if (res.error) {
-    const zh = translateError(res.error);
-    return `<div class="errbox"><b>錯誤：</b>${esc(res.error)}${zh ? `\n<b>可能原因：</b>${esc(zh)}` : ''}</div>`;
+    const zh = why(res.error);
+    return `<div class="errbox"><p>${IC('circle-x')}<span>SQLite 回傳錯誤：<code>${esc(res.error)}</code></span></p>${zh ? `<p>${IC('lightbulb')}<span>${esc(zh)}</span></p>` : ''}</div>`;
   }
-  if (!res.sets.length) return `<div class="okbox">執行成功，沒有回傳結果集${res.modified ? `（影響 ${res.modified} 列）` : ''}。下次執行會重建資料庫。</div>`;
-  if (res.sets.length === 1) return renderTable(res.sets[0].columns, res.sets[0].values, extraKeys);
-  return res.sets.map((s, i) => `<div class="multi">結果集 ${i + 1} / ${res.sets.length}</div>` + renderTable(s.columns, s.values)).join('');
+  if (!res.sets.length) return `<div class="okbox">執行成功，沒有回傳結果${res.modified ? `，影響 ${res.modified} 列` : ''}。下次執行會重建資料庫。</div>`;
+  if (res.sets.length === 1) return `<div class="dt-scroll">${table(res.sets[0].columns, res.sets[0].values, extra)}</div>`;
+  return res.sets.map((s, i) => `<p class="multi">結果 ${i + 1} / ${res.sets.length}</p><div class="dt-scroll">${table(s.columns, s.values)}</div>`).join('');
 }
-const lastSet = res => res.sets && res.sets.length ? res.sets[res.sets.length - 1] : null;
-const tablesUsed = sql => TABLE_NAMES.filter(t => new RegExp(`\\b${t}\\b`, 'i').test(sql.replace(/'(?:[^']|'')*'/g, '')));
 
-/* ---------- 1 案例背景 ---------- */
-$('#stats').innerHTML = [
-  [DATA.tables.length, '張資料表'], [DATA.totalRows, '筆樣本資料'], [DATA.queries.length, '個查詢'], [DATA.compares.length, '組結果比較'],
-].map(([n, l]) => `<div><b>${n}</b><span>${l}</span></div>`).join('');
-$('#painList').innerHTML = DATA.queries.map((q, i) =>
-  `<a class="card" href="#query" data-q="${i}"><span class="tag">Q${i + 1}</span><span><span class="q">${esc(q.title)}</span><br><span class="d">${esc(q.who)}：${esc(q.question)}</span></span></a>`).join('');
-document.querySelectorAll('#painList a').forEach(a => a.addEventListener('click', () => selectQuery(+a.dataset.q)));
+/* roles in the case section */
+const ROLES = [
+  ['concierge-bell', '櫃檯', '查某段日期還有哪些空房', '依旅客需求找房', ['q7', 'q1']],
+  ['chart-column', '營運經理', '各房型營收與住房晚數', '找出閒置的房間與熱門設施', ['q3', 'q4', 'q9']],
+  ['receipt-text', '財務', '每筆訂單的房費結算', '找出高於平均的訂單', ['q2', 'q6']],
+  ['megaphone', '行銷', '各會員等級的貢獻', '找出設施消費大戶', ['q8', 'q5']],
+];
+const qIndex = id => DATA.queries.findIndex(q => q.id === id);
+const exp = id => DATA.queries[qIndex(id)].expected.values;
+const fmt = n => Number(n).toLocaleString('en-US');
+const VIS = {
+  q7: () => `<table class="mini ui ui-mini"><thead><tr><th scope="col">房號</th><th scope="col">房型</th><th scope="col">景觀</th></tr></thead><tbody>${exp('q7').slice(0, 2).map(r => `<tr><td class="mono">${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</tbody></table>`,
+  q3: () => { const v = exp('q3'), max = Math.max(...v.map(r => r[3])); return `<svg class="bars" viewBox="0 0 300 84" role="img" aria-label="各房型營收：${v.map(r => `${r[0]} ${fmt(r[3])} 元`).join('、')}">${v.map((r, i) => `<text x="0" y="${i * 21 + 14}">${esc(r[0])}</text><rect x="96" y="${i * 21 + 4}" width="${Math.max(4, 150 * r[3] / max)}" height="13" rx="3"/><text class="v" x="300" y="${i * 21 + 14}" text-anchor="end">${fmt(r[3])}</text>`).join('')}</svg>`; },
+  q2: () => { const v = exp('q6')[0]; return `<div class="stat ui ui-stat"><span class="stat__n">${fmt(v[3])}<small>元</small></span><span class="stat__l">最高一筆房費：訂單 #${v[0]}，${esc(v[1])}，${esc(v[2])} 房</span></div>`; },
+  q8: () => `<div class="levels ui ui-levels">${exp('q8').map(r => `<span class="lv"><b>${esc(r[0])}</b>${r[1]} 人 · ${r[3]} 晚</span>`).join('')}</div>`,
+};
+$('#roles').innerHTML = ROLES.map(([ic, name, a, b, ids]) => `<article class="role"><h3 class="role__h"><span class="role__ic">${IC(ic)}</span>${name}</h3>${VIS[ids[0]]()}<ul>${ids.map(id => { const i = qIndex(id); return `<li><a class="role__q" href="#query" data-q="${i}"><span class="mono">Q${i + 1}</span><span>${esc(DATA.queries[i].title)}</span></a></li>`; }).join('')}</ul></article>`).join('');
 
-/* ---------- 2 資料庫設計 ---------- */
-$('#rels').innerHTML = DATA.relations.map(([ct, cc, pt, pc, l]) =>
-  `<div><code>${pt}.${pc}</code> 1 ── N <code>${ct}.${cc}</code><br><span class="hint">${esc(l)}</span></div>`).join('');
-const erd = document.querySelector('svg.erd');
-function focusERD(names){
-  if (!names || !names.length) { erd.classList.remove('focus'); erd.querySelectorAll('.on').forEach(e => e.classList.remove('on')); return; }
-  erd.classList.add('focus');
-  erd.querySelectorAll('.erd-table').forEach(g => g.classList.toggle('on', names.includes(g.dataset.table)));
-  erd.querySelectorAll('.erd-link').forEach(l => l.classList.toggle('on', names.includes(l.dataset.from) && names.includes(l.dataset.to)));
+document.querySelectorAll('[data-hl]').forEach(p => { p.innerHTML = highlight(p.textContent); });
+/* nav panel */
+const qs = DATA.queries;
+$('#navMenu').innerHTML = `
+  <div class="menu-col span-3"><p class="t-label">查詢 1–5</p>${qs.slice(0, 5).map((q, i) => `<a href="#query" data-q="${i}">Q${i + 1} ${esc(q.title)}<span>${esc(q.topic)}</span></a>`).join('')}</div>
+  <div class="menu-col span-3"><p class="t-label">查詢 6–9</p>${qs.slice(5).map((q, j) => `<a href="#query" data-q="${j + 5}">Q${j + 6} ${esc(q.title)}<span>${esc(q.topic)}</span></a>`).join('')}</div>
+  <a class="menu-card span-4 start-9" href="#compare"><div class="panel"><pre class="mini-code">${highlight("WHERE member_level <> 'VIP'\n   OR member_level IS NULL")}</pre></div><span class="t-card">5 組結果比較</span><span class="t-small muted">同一題改一小段 SQL，結果差在哪</span></a>`;
+
+/* ERD + tables */
+const erds = [...document.querySelectorAll('svg.erd')];
+function focusERD(names) {
+  erds.forEach(svg => {
+    svg.classList.toggle('is-focus', !!names);
+    svg.querySelectorAll('.erd-t').forEach(g => g.classList.toggle('on', !!names && names.includes(g.dataset.table)));
+    svg.querySelectorAll('.erd-link').forEach(l => l.classList.toggle('on', !!names && names.includes(l.dataset.from) && names.includes(l.dataset.to)));
+  });
 }
-function showTable(i){
-  const t = DATA.tables[i];
-  document.querySelectorAll('#ttabs .tab').forEach((b, j) => b.setAttribute('aria-selected', i === j));
-  const neighbors = [t.name, ...DATA.relations.filter(r => r[0] === t.name || r[2] === t.name).flatMap(r => [r[0], r[2]])];
-  focusERD([...new Set(neighbors)]);
-  $('#tpanel').innerHTML = `
-    <p class="tdesc"><b style="color:var(--ink);font-family:var(--mono)">${t.name}</b>（${esc(t.zh)}）— ${esc(t.desc)}</p>
-    <div class="dual">
-      <div><h4 style="margin-top:0">欄位說明</h4><div class="tbl-scroll"><table class="t dict"><thead><tr><th>欄位</th><th>型別</th><th>說明</th></tr></thead><tbody>
-        ${t.cols.map(([c, ty, k, d]) => `<tr><td>${c}${k ? `<span class="k ${k}">${k}</span>` : ''}</td><td>${ty}</td><td>${esc(d)}</td></tr>`).join('')}
+$('#ttabs').innerHTML = DATA.tables.map((t, i) => `<button class="tab" role="tab" id="tt-${t.name}" aria-controls="tp-${t.name}" aria-selected="${i === 3}" tabindex="${i === 3 ? 0 : -1}">${t.name}<small>${t.rows.length}</small></button>`).join('');
+$('#tpanels').innerHTML = DATA.tables.map((t, i) => `
+  <div class="tpanel" role="tabpanel" id="tp-${t.name}" aria-labelledby="tt-${t.name}"${i === 3 ? '' : ' hidden'}>
+    <p class="tpanel__desc"><b class="mono">${t.name}</b>（${esc(t.zh)}）：${esc(t.desc)}</p>
+    <div class="tpanel__dict"><p class="lbl">欄位說明</p><div class="dt-scroll ui ui-table" data-visual>
+      <table class="dt dict"><thead><tr><th scope="col">欄位</th><th scope="col">型別</th><th scope="col">說明</th></tr></thead><tbody>
+      ${t.cols.map(([c, ty, k, d]) => `<tr><td>${c.replace(/_/g, '_<wbr>')}${k ? `<span class="key key--${k.toLowerCase()}">${k}</span>` : ''}</td><td>${ty}</td><td>${esc(d)}</td></tr>`).join('')}
       </tbody></table></div></div>
-      <div><h4 style="margin-top:0">樣本資料（全部 ${t.rows.length} 筆）</h4>${renderTable(t.cols.map(c => c[0]), t.rows)}</div>
-    </div>`;
+    <div class="tpanel__rows"><p class="lbl">樣本資料，全部 ${t.rows.length} 筆</p><div class="dt-scroll ui ui-table" data-visual>${table(t.cols.map(c => c[0]), t.rows)}</div>${rec(t)}${rels(t)}</div>
+  </div>`).join('');
+function rels(t) {
+  const r = DATA.relations.filter(x => x[0] === t.name || x[2] === t.name);
+  return `<div class="trel ui ui-relations"><p class="lbl">和其他表的關聯</p>${r.map(([ct, cc, pt, pc, l]) => `<p class="trel__row"><span class="mono">${pt}.${pc.replace(/_/g, '_<wbr>')} 1 → N ${ct}.${cc.replace(/_/g, '_<wbr>')}</span><span class="muted">${esc(l)}</span></p>`).join('')}</div>`;
 }
-$('#ttabs').innerHTML = DATA.tables.map((t, i) => `<button class="tab" role="tab" data-i="${i}">${t.name}<small>${t.rows.length}</small></button>`).join('');
-document.querySelectorAll('#ttabs .tab').forEach(b => b.addEventListener('click', () => showTable(+b.dataset.i)));
-erd.querySelectorAll('.erd-table').forEach(g => { g.style.cursor = 'pointer'; g.addEventListener('click', () => showTable(TABLE_NAMES.indexOf(g.dataset.table))); });
-showTable(3);
-$('#ddl').innerHTML = highlight(DATA.seed);
+function rec(t) {
+  return `<div class="rec ui ui-record" data-rec="${t.name}" data-i="0"><div class="rec__bar"><button class="btn btn--secondary" type="button" data-step="-1" aria-label="上一筆">${IC('chevron-left')}</button><span class="rec__pos" aria-live="polite">第 1 筆，共 ${t.rows.length} 筆</span><button class="btn btn--secondary" type="button" data-step="1" aria-label="下一筆">${IC('chevron-right')}</button></div><dl class="rec__dl">${t.cols.map(([c], j) => `<div><dt>${c.replace(/_/g, '_<wbr>')}</dt><dd>${t.rows[0][j] === null ? '<span class="null">NULL</span>' : esc(t.rows[0][j])}</dd></div>`).join('')}</dl></div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.rec [data-step]'); if (!b) return;
+  const box = b.closest('.rec'), t = DATA.tables.find(x => x.name === box.dataset.rec);
+  const i = (+box.dataset.i + +b.dataset.step + t.rows.length) % t.rows.length; box.dataset.i = i;
+  box.querySelector('.rec__pos').textContent = `第 ${i + 1} 筆，共 ${t.rows.length} 筆`;
+  box.querySelectorAll('dd').forEach((dd, j) => { const v = t.rows[i][j]; dd.innerHTML = v === null ? '<span class="null">NULL</span>' : esc(v); });
+});
+function showTable(name) {
+  const tab = document.getElementById('tt-' + name);
+  if (tab && tab.getAttribute('aria-selected') !== 'true') tab.click();
+  const neighbours = [name, ...DATA.relations.filter(r => r[0] === name || r[2] === name).flatMap(r => [r[0], r[2]])];
+  focusERD([...new Set(neighbours)]);
+}
+document.querySelectorAll('#ttabs .tab').forEach(b => b.addEventListener('click', () => {
+  const name = b.id.slice(3);
+  const neighbours = [name, ...DATA.relations.filter(r => r[0] === name || r[2] === name).flatMap(r => [r[0], r[2]])];
+  focusERD([...new Set(neighbours)]);
+}));
+document.querySelectorAll('.erd-t').forEach(g => {
+  const go = () => { showTable(g.dataset.table); document.getElementById('tables').scrollIntoView(); };
+  g.addEventListener('click', go);
+  g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+});
 
-/* ---------- 3 查詢操作 ---------- */
+/* workbench */
 let cur = 0;
-const qEd = makeEditor($('#qEditor'), '', () => runQuery());
-$('#qlist').innerHTML = DATA.queries.map((q, i) =>
-  `<button class="qbtn" role="listitem" data-i="${i}"><span class="no">Q${i + 1}</span><span><span class="tt">${esc(q.title)}</span><span class="tp">${esc(q.topic)}</span></span></button>`).join('');
+const ed = makeEditor($('#qEditor'), '', () => runQuery(), 'qSql');
+$('#qlist').innerHTML = qs.map((q, i) => `<button class="qbtn" type="button" data-i="${i}"><span class="qbtn__no">Q${i + 1}</span><span class="qbtn__t">${esc(q.title)}</span><span class="qbtn__m">${esc(q.who)} · ${esc(q.topic)}</span></button>`).join('');
 document.querySelectorAll('.qbtn').forEach(b => b.addEventListener('click', () => selectQuery(+b.dataset.i)));
-function selectQuery(i){
-  cur = i; const q = DATA.queries[i];
+$('#qPick').innerHTML = qs.map((q, i) => `<option value="${i}">Q${i + 1} ${esc(q.title)}</option>`).join('');
+$('#qPick').addEventListener('change', e => selectQuery(+e.target.value));
+const IDLE = `<div class="empty">${IC('terminal')}<span>還沒執行。改好上面的 SQL 後按「執行查詢」。</span></div>`;
+function selectQuery(i) {
+  cur = i; const q = qs[i];
   document.querySelectorAll('.qbtn').forEach((b, j) => b.setAttribute('aria-current', i === j));
+  $('#qPick').value = String(i);
   $('#qWho').textContent = q.who; $('#qTopic').textContent = q.topic;
   $('#qTitle').textContent = `Q${i + 1}. ${q.title}`; $('#qQuestion').textContent = q.question;
-  $('#qExplain').textContent = q.explain;
-  $('#qTry').innerHTML = `<b>試著修改：</b>${esc(q.try)}`;
-  qEd.value = q.sql;
-  $('#qExpected').innerHTML = renderTable(q.expected.columns, q.expected.values);
+  $('#qTry').textContent = q.try; $('#qExplain').textContent = q.explain;
+  ed.value = q.sql;
+  $('#qExpected').innerHTML = table(q.expected.columns, q.expected.values);
   $('#qExpMeta').textContent = `${q.expected.values.length} 列`;
-  $('#qActual').innerHTML = '<div class="empty">尚未執行。修改上方 SQL 後按「▶ 執行」。</div>';
-  $('#qBadge').innerHTML = '';
-  updateUses();
+  $('#qActual').innerHTML = IDLE; $('#qBadge').innerHTML = '';
 }
-function updateUses(){
-  const used = tablesUsed(qEd.value);
-  $('#qUses').innerHTML = used.length ? '用到的資料表：' + used.map(t => `<code>${t}</code>`).join('') : '';
-}
-$('#qEditor').addEventListener('input', updateUses);
-function runQuery(){
+function runQuery() {
   if (!SQL) return;
-  const q = DATA.queries[cur], res = runSQL(qEd.value);
+  const q = qs[cur], res = runSQL(ed.value), s = lastSet(res);
   $('#qActual').innerHTML = renderRun(res);
-  const s = lastSet(res);
-  if (res.error) $('#qBadge').innerHTML = '<span class="badge err">執行錯誤</span>';
-  else if (!s) $('#qBadge').innerHTML = '<span class="badge diff">無結果集</span>';
+  if (res.error) $('#qBadge').innerHTML = `<span class="state state--err">${IC('circle-x')}執行錯誤</span>`;
+  else if (!s) $('#qBadge').innerHTML = `<span class="state state--diff">${IC('info')}沒有結果</span>`;
   else {
     const same = JSON.stringify(s.columns) === JSON.stringify(q.expected.columns) && JSON.stringify(s.values) === JSON.stringify(q.expected.values);
-    $('#qBadge').innerHTML = `<span class="meta">${s.values.length} 列 · ${res.ms.toFixed(1)} ms</span> ` + (same ? '<span class="badge ok">✓ 與預期相同</span>' : '<span class="badge diff">與預期不同</span>');
+    $('#qBadge').innerHTML = `${s.values.length} 列 · ${res.ms.toFixed(1)} ms ` + (same ? `<span class="state state--ok">${IC('circle-check')}與預期相同</span>` : `<span class="state state--diff">${IC('triangle-alert')}與預期不同</span>`);
   }
 }
 $('#qRun').addEventListener('click', runQuery);
-$('#qReset').addEventListener('click', () => { qEd.value = DATA.queries[cur].sql; updateUses(); });
+$('#qReset').addEventListener('click', () => { ed.value = qs[cur].sql; });
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[data-q]');
+  if (a) selectQuery(+a.dataset.q);
+});
 selectQuery(0);
 
-/* ---------- 4 結果比較 ---------- */
-const cmpRunners = [];
-$('#cmpList').innerHTML = DATA.compares.map((c, ci) => {
-  const qi = DATA.queries.findIndex(q => q.id === c.ref);
-  return `<article class="card cmp" id="${c.id}">
-    <div class="cmp-head"><span class="no">比較 ${ci + 1}</span><h3>${esc(c.title)}</h3></div>
-    <p class="qq">問題：<b>${esc(c.question)}</b>　·　相關查詢 <a href="#query" data-q="${qi}">Q${qi + 1}</a></p>
-    <div class="variants">${c.variants.map((v, vi) => `
-      <div class="var" data-c="${ci}" data-v="${vi}">
-        <div class="var-top"><b>${esc(v.label)}</b>${vi === c.variants.length - 1 ? '<span class="vtag good">✓ 正確寫法</span>' : '<span class="vtag bad">✗ 有問題</span>'}</div>
+/* compare */
+$('#ctabs').innerHTML = DATA.compares.map((c, i) => `<button class="tab" role="tab" id="ct-${c.id}" aria-controls="cp-${c.id}" aria-selected="${i === 0}" tabindex="${i === 0 ? 0 : -1}">比較 ${i + 1}</button>`).join('');
+$('#cpanels').innerHTML = DATA.compares.map((c, ci) => {
+  const qi = qIndex(c.ref);
+  return `<div class="cmp" role="tabpanel" id="cp-${c.id}" aria-labelledby="ct-${c.id}"${ci ? ' hidden' : ''}>
+    <p class="cmp__q"><span><b>${esc(c.title)}</b></span><span class="muted">問題：${esc(c.question)}</span><a class="link" href="#query" data-q="${qi}">打開 Q${qi + 1}</a></p>
+    <div class="vseg" role="group" aria-label="選擇版本">${c.variants.map((v, vi) => `<button type="button" class="tab" aria-pressed="${vi === 0}" data-vs="${vi}">版本 ${esc(v.label.split(' · ')[0])}</button>`).join('')}</div>
+    <div class="vars">${c.variants.map((v, vi) => `
+      <div class="var ui ui-variant${vi === 0 ? ' is-shown' : ''}" data-c="${ci}" data-v="${vi}">
+        <div class="var__top"><label for="cmp-${ci}-${vi}">${esc(v.label)}</label>${vi === c.variants.length - 1 ? `<span class="state state--ok">${IC('circle-check')}正確寫法</span>` : `<span class="state state--err">${IC('circle-x')}有問題</span>`}</div>
         <div class="editor"></div>
-        <div class="toolbar" style="margin:0"><button class="btn primary" data-run disabled>▶ 執行</button><button class="btn" data-reset>↺ 還原</button></div>
-        <div class="note"></div>
-        <div class="out"><div class="empty">等待 SQLite 載入…</div></div>
+        <div class="toolbar"><button class="btn btn--primary" type="button" data-run disabled>${IC('play')}執行</button><button class="btn btn--secondary" type="button" data-reset>${IC('rotate-ccw')}還原</button></div>
+        <div class="var__note"></div>
+        <div class="out ui ui-result"><div class="empty">${IC('terminal')}<span>等待 SQLite 載入</span></div></div>
       </div>`).join('')}
     </div>
-    <div class="why"><h4>結果如何改變？為什麼？</h4>${c.explain.split('\n').map(p => `<p>${esc(p)}</p>`).join('')}</div>
-  </article>`;
+    <div class="why"><h3>結果怎麼變？為什麼？</h3>${c.explain.split('\n').map(p => `<p>${esc(p)}</p>`).join('')}</div>
+  </div>`;
 }).join('');
-document.querySelectorAll('#cmpList a[data-q]').forEach(a => a.addEventListener('click', () => selectQuery(+a.dataset.q)));
+document.querySelectorAll('.vseg').forEach(g => g.addEventListener('click', e => {
+  const b = e.target.closest('[data-vs]'); if (!b) return;
+  g.querySelectorAll('[data-vs]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  g.parentElement.querySelectorAll('.var').forEach((v, i) => v.classList.toggle('is-shown', i === +b.dataset.vs));
+}));
+const runners = [];
 DATA.compares.forEach((c, ci) => {
-  const editors = [], results = [];
-  const cards = [...document.querySelectorAll(`.var[data-c="${ci}"]`)];
+  const cards = [...document.querySelectorAll(`.var[data-c="${ci}"]`)], eds = [], results = [];
   const refresh = () => {
-    const ref = results[results.length - 1];
-    const refSet = ref && lastSet(ref);
+    const ref = results[cards.length - 1], refSet = ref && lastSet(ref);
     const refKeys = new Set(refSet ? refSet.values.map(r => JSON.stringify(r)) : []);
     cards.forEach((card, vi) => {
       const res = results[vi]; if (!res) return;
@@ -558,32 +846,44 @@ DATA.compares.forEach((c, ci) => {
           const mine = new Set(s.values.map(r => JSON.stringify(r)));
           extra = new Set([...mine].filter(k => !refKeys.has(k)));
           const lost = [...refKeys].filter(k => !mine.has(k)).length;
-          note += extra.size || lost ? ` · 與正確版相比：<span class="lost">多 ${extra.size} 列、少 ${lost} 列</span>` : ' · 與正確版相同';
+          note += extra.size || lost ? ` · 和正確版相比<span class="lost">多 ${extra.size} 列、少 ${lost} 列</span>` : ' · 和正確版相同';
         }
       }
-      card.querySelector('.note').innerHTML = note;
+      card.querySelector('.var__note').innerHTML = note;
       card.querySelector('.out').innerHTML = renderRun(res, extra);
     });
   };
   cards.forEach((card, vi) => {
-    const run = () => { if (!SQL) return; results[vi] = runSQL(editors[vi].value); refresh(); };
-    editors[vi] = makeEditor(card.querySelector('.editor'), c.variants[vi].sql, run);
-    card.querySelector('[data-run]').addEventListener('click', run);
-    card.querySelector('[data-reset]').addEventListener('click', () => { editors[vi].value = c.variants[vi].sql; run(); });
-    cmpRunners.push(run);
+    const go = () => { if (!SQL) return; results[vi] = runSQL(eds[vi].value); refresh(); };
+    eds[vi] = makeEditor(card.querySelector('.editor'), c.variants[vi].sql, go, `cmp-${ci}-${vi}`);
+    card.querySelector('[data-run]').addEventListener('click', go);
+    card.querySelector('[data-reset]').addEventListener('click', () => { eds[vi].value = c.variants[vi].sql; go(); });
+    runners.push(go);
   });
 });
 
-/* ---------- 啟動 ---------- */
-initSqlJs({ locateFile: f => 'lib/' + f }).then(S => {
-  SQL = S;
-  const st = $('#status'); st.classList.add('ok'); st.querySelector('span').textContent = '就緒';
-  document.querySelectorAll('button[disabled]').forEach(b => b.disabled = false);
-  cmpRunners.forEach(r => r());
-}).catch(e => {
-  const st = $('#status'); st.classList.add('err'); st.querySelector('span').textContent = '載入失敗';
-  document.querySelectorAll('.out .empty, #qActual .empty').forEach(el => el.textContent = 'SQLite 載入失敗：' + e.message + '（若直接雙擊開啟檔案，請改用 GitHub Pages 或本機伺服器開啟）');
-});
+/* start the engine: the repository's lib/ copy first, the jsDelivr copy when this file stands alone */
+(function boot() {
+  const eng = $('#engine');
+  const done = S => {
+    SQL = S; eng.classList.add('is-ready'); eng.lastElementChild.textContent = 'SQLite 已就緒';
+    document.querySelectorAll('button[disabled]').forEach(b => b.disabled = false);
+    runners.forEach(r => r());
+  };
+  const fail = e => {
+    eng.classList.add('is-fail'); eng.lastElementChild.textContent = 'SQLite 載入失敗';
+    document.querySelectorAll('.out .empty span, #qActual .empty span').forEach(el => el.textContent = 'SQLite 載入失敗：' + e.message);
+  };
+  const load = base => new Promise((ok, no) => {
+    const s = document.createElement('script'); s.src = base + 'sql-wasm.js';
+    s.onload = () => initSqlJs({ locateFile: f => base + f }).then(ok, no);
+    s.onerror = () => { s.remove(); no(new Error('無法載入 ' + base)); };
+    document.head.appendChild(s);
+  });
+  load('lib/').catch(() => load('https://cdn.jsdelivr.net/npm/sql.js@1.13.0/dist/')).then(done).catch(fail);
+})();
 </script>
+<script type="module" src="assets/system.js"></script>
+<script type="module" src="assets/motion/motion.js"></script>
 </body>
 </html>
